@@ -1,0 +1,60 @@
+# Future Security Rules Plan
+
+Firebase is not connected yet. This is a planning document for future Firestore and Auth rules.
+
+## Roles
+
+- admin
+- pastor_view
+- pastor_contributor
+- prayer_team
+- hospitality_team
+- media_team
+- member
+
+## Suggested Permissions
+
+### admin
+
+- Full access to all collections.
+- Can manage users, roles, settings, and all dashboard data.
+
+### pastor_view
+
+- Read-only access to church operations, prayer summaries, visitor summaries, and media status.
+- No write access to private prayer notes or visitor details unless separately granted.
+
+### pastor_contributor
+
+- Can create drafts for announcements, events, media notes, and sermon notes.
+- Can read relevant church operations and media status.
+- Cannot manage roles, settings, or private admin data.
+
+### prayer_team
+
+- Can read and update prayer requests only.
+- Cannot access visitor private notes, media task internals, settings, or role management.
+
+### hospitality_team
+
+- Can read and update visitors/connect cards only.
+- Cannot access prayer request private notes, app settings, or role management.
+
+### media_team
+
+- Can read and update media tasks, tech SOPs, and Sunday service tasks.
+- Can read relevant production status.
+- Cannot access private prayer or visitor care data unless granted by admin.
+
+### member
+
+- Can submit prayer requests and connect forms only.
+- Cannot view private admin data, prayer team data, visitor data, or internal workflows.
+
+## Rule Strategy
+
+- Store role assignments on user profiles or role mapping documents.
+- Use custom claims only if role checks need to be fast and centralized.
+- Protect prayer requests and visitor records with strict role checks.
+- Deny by default and explicitly allow only needed reads/writes.
+- Add server timestamps for createdAt and updatedAt when Firestore is connected.
