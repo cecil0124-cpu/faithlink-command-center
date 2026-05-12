@@ -249,6 +249,7 @@ function SectionPage({
               <h2>Backup Reminder</h2>
             </div>
             <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly and before major workflow changes.</p>
+            <p className="backup-reminder">Until Firebase sync is connected, data is saved only in this browser on this device. Export backups before switching devices or clearing browser data.</p>
             <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
             {rolePermissions.canExport ? (
               <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>

@@ -2,6 +2,29 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 12 Mobile + Installable App Prep
+
+- Improves mobile layout with a compact top bar and slide-out navigation.
+- Keeps desktop sidebar behavior intact.
+- Adds PWA manifest at `public/manifest.webmanifest`.
+- Adds placeholder app icon SVG at `public/icons/faithlink-icon.svg`.
+- Adds mobile app metadata in `index.html`.
+- Adds admin-only `App Install Prep` page.
+- Adds `docs/pwa-plan.md` for install/offline planning.
+- Updates System Status with PWA, offline cache, mobile layout, and data sync status.
+
+Current PWA limitations:
+
+- Service worker/offline cache is not connected.
+- Firebase sync is not connected.
+- Real login is not connected.
+- Data remains browser/device-specific localStorage.
+- Production PNG icons should be added later.
+
+Export a backup before clearing browser data, switching devices, or testing install behavior.
+
+Future Phase 13 options include Firebase Hosting, Firebase Auth/Firestore, service worker/offline support, and real icon assets.
+
 ## Phase 11 FaithLink Visual Rebrand
 
 - Rebrands the app as a broader personal command center for ministry, media, music, technology, AI workflows, and real-life planning.

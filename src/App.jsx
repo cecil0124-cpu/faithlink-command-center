@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import ActivityLog from './components/ActivityLog'
+import AppInstallPrep from './components/AppInstallPrep'
 import DeployPrep from './components/DeployPrep'
 import Header from './components/Header'
 import ItemForm from './components/ItemForm'
@@ -263,6 +264,7 @@ function createTaskFromTemplate(task, template, timestamp) {
 function App() {
   const [activeSection, setActiveSection] = useState('overview')
   const [appData, setAppData] = useState(() => getDashboardData())
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [message, setMessage] = useState('')
   const [selectedRoleId, setSelectedRoleId] = useState(() => getStoredRoleId())
   const [searchTerm, setSearchTerm] = useState('')
@@ -284,6 +286,7 @@ function App() {
   const isRunSheet = activeSection === 'runSheet'
   const isTeamViewPrep = activeSection === 'teamViewPrep'
   const isDeployPrep = activeSection === 'deployPrep'
+  const isInstallPrep = activeSection === 'installPrep'
   const sectionContent = isOverview || isTemplates ? sectionPages[activeSection] : sections[activeSection]
   const pageTitle = isSearchActive
     ? 'Search Results'
@@ -670,7 +673,30 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isMobileNavOpen ? 'mobile-nav-open' : ''}`}>
+      <div className="mobile-topbar">
+        <button
+          aria-expanded={isMobileNavOpen}
+          aria-label="Open navigation menu"
+          className="mobile-menu-button"
+          onClick={() => setIsMobileNavOpen((current) => !current)}
+          type="button"
+        >
+          Menu
+        </button>
+        <div>
+          <strong>FaithLink</strong>
+          <span>Command Center</span>
+        </div>
+      </div>
+      {isMobileNavOpen && (
+        <button
+          aria-label="Close navigation menu"
+          className="mobile-nav-backdrop"
+          onClick={() => setIsMobileNavOpen(false)}
+          type="button"
+        />
+      )}
       <Sidebar
         activeSection={activeSection}
         items={visibleNavigationItems}
@@ -680,6 +706,7 @@ function App() {
           }
           setActiveSection(sectionId)
           setSearchTerm('')
+          setIsMobileNavOpen(false)
         }}
       />
 
@@ -873,6 +900,8 @@ function App() {
           <TeamViewPrep />
         ) : isDeployPrep ? (
           <DeployPrep />
+        ) : isInstallPrep ? (
+          <AppInstallPrep />
         ) : (
           <SectionPage
             actionPermissions={activeActionPermissions}

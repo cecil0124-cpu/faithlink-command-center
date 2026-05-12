@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
   appName: 'FaithLink Command Center',
-  version: 'Phase 10 Deployment Prep Local',
+  version: 'Phase 12 Mobile PWA Prep Local',
   dataMode: 'localStorage',
   deploymentPhase: 'prep',
   firebaseEnabled: false,
@@ -9,4 +9,9 @@ export const APP_CONFIG = {
   authConnected: false,
   firestoreConnected: false,
   hostingStatus: 'Local Only',
+  pwaPrep: true,
+  installableStatus: 'Manifest Prepared',
+  offlineStatus: 'Service Worker Not Connected',
+  mobileStatus: 'Responsive Local App',
+  dataSyncStatus: 'Not Connected',
 }

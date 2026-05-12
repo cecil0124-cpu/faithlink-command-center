@@ -13,6 +13,7 @@ export const navigationItems = [
   { id: 'runSheet', label: 'Sunday Run Sheet' },
   { id: 'teamViewPrep', label: 'Team View Prep' },
   { id: 'deployPrep', label: 'Deploy Prep' },
+  { id: 'installPrep', label: 'App Install Prep' },
   { id: 'settings', label: 'Settings' },
 ]
 

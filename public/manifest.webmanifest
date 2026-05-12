@@ -1,0 +1,18 @@
+{
+  "name": "FaithLink Command Center",
+  "short_name": "FaithLink",
+  "description": "Personal command center for ministry, media, music, technology, AI workflows, and planning.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#101828",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/faithlink-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

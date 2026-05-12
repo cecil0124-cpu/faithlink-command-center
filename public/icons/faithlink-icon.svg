@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">FaithLink Command Center icon</title>
+  <rect width="512" height="512" rx="112" fill="#101828"/>
+  <path d="M104 150h304" stroke="#2563eb" stroke-width="28" stroke-linecap="round"/>
+  <path d="M104 362h304" stroke="#2563eb" stroke-width="28" stroke-linecap="round"/>
+  <path d="M116 116h280v280H116z" fill="none" stroke="#d4af37" stroke-width="14" opacity=".9"/>
+  <text x="256" y="300" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="138" font-weight="800" fill="#d4af37">FL</text>
+</svg>

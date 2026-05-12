@@ -28,7 +28,7 @@ export const roleConfigs = {
   admin: {
     label: 'Admin',
     description: 'Full local preview access to every dashboard area and data tool.',
-    allowedSections: ['overview', 'sunday', 'media', 'prayer', 'visitors', 'music', 'websites', 'prompts', 'sops', 'templates', 'weeklyReview', 'runSheet', 'teamViewPrep', 'deployPrep', 'settings'],
+    allowedSections: ['overview', 'sunday', 'media', 'prayer', 'visitors', 'music', 'websites', 'prompts', 'sops', 'templates', 'weeklyReview', 'runSheet', 'teamViewPrep', 'deployPrep', 'installPrep', 'settings'],
     permissions: fullPermissions,
   },
   pastor_view: {
