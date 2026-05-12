@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "YOUR_FIREBASE_PROJECT_ID"
-  }
+    "Default": "faithlink-command-center"
+  },
+  "targets": {},
+  "etags": {}
 }
