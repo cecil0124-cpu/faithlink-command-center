@@ -2,6 +2,28 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 13A Firebase Hosting Only
+
+- Prepares Firebase Hosting config for the Vite React app.
+- Uses `dist` as the production build folder.
+- Uses SPA fallback rewrites to `/index.html`.
+- Publishes the app shell only.
+- Keeps dashboard data in browser localStorage.
+- Does not connect Firestore.
+- Does not require Firebase Auth.
+
+Deploy commands for later:
+
+```bash
+npm run lint
+npm run build
+firebase login
+firebase use --add
+firebase deploy --only hosting
+```
+
+LocalStorage remains browser/device-specific until Firestore sync is added in a later phase. Do not store real private prayer requests, visitor info, or team data in Firebase yet.
+
 ## Phase 12 Mobile + Installable App Prep
 
 - Improves mobile layout with a compact top bar and slide-out navigation.

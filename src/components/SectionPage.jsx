@@ -187,9 +187,10 @@ function SectionPage({
               <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
               <p><strong>Firebase Project:</strong> {APP_CONFIG.firebaseConnected ? 'Connected' : 'Not Connected'}</p>
               <p><strong>Hosting:</strong> {APP_CONFIG.hostingStatus}</p>
-              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Connected' : 'Not Connected'}</p>
+              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Connected' : 'Not Required'}</p>
               <p><strong>Firestore:</strong> {APP_CONFIG.firestoreConnected ? 'Connected' : 'Not Connected'}</p>
-              <p><strong>Deployment Phase:</strong> {APP_CONFIG.deploymentPhase}</p>
+              <p><strong>Deployment Phase:</strong> 13A Hosting Only</p>
+              <p><strong>Sync:</strong> {APP_CONFIG.dataSyncStatus}</p>
               <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
               <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>

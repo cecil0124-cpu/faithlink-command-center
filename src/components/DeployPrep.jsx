@@ -9,6 +9,18 @@ const envVariables = [
 
 const prepCards = [
   {
+    title: 'Firebase Hosting',
+    status: 'Ready for Deployment',
+    items: [
+      'Hosting Status: Ready for Deployment',
+      'Build Output: dist',
+      'Data Mode: localStorage',
+      'Firestore: Not Connected',
+      'Auth: Not Required Yet',
+      'Deploy Command: firebase deploy --only hosting',
+    ],
+  },
+  {
     title: 'Firebase Setup',
     status: 'Not Started',
     items: [
@@ -55,13 +67,13 @@ function DeployPrep() {
   return (
     <section className="section-page">
       <div className="section-intro">
-        <span className="eyebrow">Phase 10</span>
+        <span className="eyebrow">Phase 13A</span>
         <h2>Deploy Prep</h2>
-        <p>Prepare Firebase setup, environment variables, migration planning, and production readiness before any connection is made.</p>
+        <p>Prepare Firebase Hosting deployment while keeping dashboard data in browser localStorage.</p>
       </div>
 
       <div className="warning-banner">
-        Firebase is not connected yet. This page is preparation only.
+        This deploy publishes the app shell only. Dashboard data remains stored in each browser until Firestore is connected.
       </div>
 
       <div className="deploy-prep-grid">
