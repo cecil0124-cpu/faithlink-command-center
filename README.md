@@ -2,6 +2,22 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 8 Restoration Setup Preset
+
+- Adds an opt-in Restoration Ministries starter setup.
+- Keeps existing localStorage data unchanged unless you intentionally load the preset.
+- Preset includes Restoration Ministries identity, service times, Sunday workflow, media production, A/V SOPs, website/app tasks, music planning, AI prompt categories, Today’s Focus, This Week, and Sunday Run Sheet data.
+- Settings includes a `Restoration Setup Preset` panel with a backup warning and confirmation step.
+- Loading the preset logs `Restoration setup loaded` in Recent Activity.
+
+## How To Load The Restoration Preset
+
+Open Settings, review the `Restoration Setup Preset` panel, and click `Load Restoration Setup`. The app asks for confirmation before replacing current local dashboard data.
+
+Loading this preset replaces the current browser localStorage dashboard. Export a backup first if you need to preserve the current data.
+
+The preset is local-only. Firebase, authentication, and Firestore are still not connected.
+
 ## Phase 7 Features
 
 - Due dates on local dashboard items.

@@ -2,6 +2,7 @@ import {
   exportDashboardData as exportLocalDashboardData,
   getTotalItems,
   loadDashboardData,
+  normalizeDashboardData,
   resetDashboardData as resetLocalDashboardData,
   saveDashboardData,
   validateDashboardImport,
@@ -25,6 +26,10 @@ export function exportDashboardData(data) {
 
 export function validateImportData(data) {
   return validateDashboardImport(data)
+}
+
+export function prepareDashboardData(data) {
+  return normalizeDashboardData(data)
 }
 
 export function getDashboardItemCount(data) {

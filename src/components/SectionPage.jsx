@@ -20,6 +20,7 @@ function SectionPage({
   onArchiveCompleted,
   onCompleteItem,
   onConfirmImport,
+  onLoadRestorationPreset,
   onDeleteItem,
   onExportData,
   onImportFile,
@@ -34,6 +35,7 @@ function SectionPage({
   const [editingItem, setEditingItem] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
+  const [isPresetConfirming, setIsPresetConfirming] = useState(false)
   const [isResetConfirming, setIsResetConfirming] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
@@ -123,6 +125,11 @@ function SectionPage({
     event.target.value = ''
   }
 
+  function handleConfirmPresetLoad() {
+    onLoadRestorationPreset()
+    setIsPresetConfirming(false)
+  }
+
   return (
     <section className={`section-page ${sectionId === 'sunday' ? 'printable-page' : ''}`}>
       <div className="section-toolbar">
@@ -186,6 +193,28 @@ function SectionPage({
                 </div>
               )}
             </div>
+          </section>
+
+          <section className="content-panel backup-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Restoration Ministries</span>
+              <h2>Restoration Setup Preset</h2>
+            </div>
+            <p className="backup-reminder">Load a Restoration Ministries starter setup with service times, media workflows, A/V checklists, website/app tasks, music planning, and AI prompt categories.</p>
+            <p><strong>Warning:</strong> Loading this preset will replace your current local dashboard data. Export a backup first if needed.</p>
+            {!isPresetConfirming ? (
+              <button className="primary-button" onClick={() => setIsPresetConfirming(true)} type="button">
+                Load Restoration Setup
+              </button>
+            ) : (
+              <div className="confirm-box">
+                <p>Export a backup before continuing if you need to keep your current local dashboard data.</p>
+                <div className="settings-actions">
+                  <button className="danger-button" onClick={handleConfirmPresetLoad} type="button">Confirm Load Preset</button>
+                  <button className="secondary-button" onClick={() => setIsPresetConfirming(false)} type="button">Cancel</button>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="content-panel backup-panel">

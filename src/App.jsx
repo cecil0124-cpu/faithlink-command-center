@@ -21,6 +21,7 @@ import {
   sectionPages,
   upcomingItems,
 } from './data/dashboardData'
+import { restorationPresetData } from './data/restorationPresetData'
 import {
   getTemplateByName,
   recommendedTemplates,
@@ -30,6 +31,7 @@ import {
   exportDashboardData,
   getDashboardData,
   getDashboardItemCount,
+  prepareDashboardData,
   resetDashboardData,
   updateDashboardData,
   validateImportData,
@@ -166,6 +168,10 @@ function createActivity(action, section, itemTitle, timestamp = getTimestamp()) 
   }
 }
 
+function cloneData(data) {
+  return JSON.parse(JSON.stringify(data))
+}
+
 function createTaskFromTemplate(task, template, timestamp) {
   return {
     id: crypto.randomUUID(),
@@ -222,6 +228,7 @@ function App() {
   const needsAttentionItems = useMemo(() => getNeedsAttention(sections), [sections])
   const searchResults = useMemo(() => getSearchResults(sections, searchTerm), [sections, searchTerm])
   const recommendedTemplateItems = recommendedTemplates.map(getTemplateByName).filter(Boolean)
+  const dashboardUpcomingItems = appData.upcomingItems || upcomingItems
   const dataHealth = useMemo(() => {
     const allItems = Object.values(sections).flatMap((section) => section.items || [])
     return {
@@ -424,6 +431,24 @@ function App() {
     setMessage('Data reset')
   }
 
+  function handleLoadRestorationPreset() {
+    const timestamp = getTimestamp()
+    const presetData = prepareDashboardData(cloneData(restorationPresetData))
+    const dataWithActivity = {
+      ...presetData,
+      activityLog: [
+        createActivity('Restoration setup loaded', 'Settings', 'Restoration Ministries preset', timestamp),
+        ...(presetData.activityLog || []),
+      ],
+      lastUpdated: timestamp,
+    }
+
+    setAppData(dataWithActivity)
+    updateDashboardData(dataWithActivity)
+    setImportState({ error: '', fileData: null, preview: null })
+    setMessage('Restoration setup loaded')
+  }
+
   function handleFocusChange(focusItems) {
     persistData(
       { ...appData, focusItems },
@@ -614,6 +639,15 @@ function App() {
             </section>
 
             <div className="home-panel-grid">
+              <section className="content-panel identity-card">
+                <div className="panel-heading">
+                  <span className="eyebrow">Church Home</span>
+                  <h2>Restoration Ministries</h2>
+                </div>
+                <p>1204 Commercial Ave, Charlotte, NC 28208</p>
+                <strong>Sunday 10:45 AM | Wednesday 7:00 PM</strong>
+                <p>Restoring the world with God's Word.</p>
+              </section>
               <TodayFocus items={appData.focusItems} onChange={handleFocusChange} />
               <section className="content-panel needs-panel">
                 <div className="panel-heading">
@@ -667,7 +701,7 @@ function App() {
                   <h2>This Week</h2>
                 </div>
                 <div className="upcoming-list">
-                  {upcomingItems.map((item) => (
+                  {dashboardUpcomingItems.map((item) => (
                     <article className="upcoming-item" key={item.title}>
                       <span>{item.when}</span>
                       <strong>{item.title}</strong>
@@ -681,7 +715,11 @@ function App() {
             </div>
           </section>
         ) : isTemplates ? (
-          <TemplatesPage onUseTemplate={handleUseTemplate} templates={workflowTemplates} />
+          <TemplatesPage
+            localTemplateItems={sections.templates?.items || []}
+            onUseTemplate={handleUseTemplate}
+            templates={workflowTemplates}
+          />
         ) : isWeeklyReview ? (
           <WeeklyReview activityLog={appData.activityLog} sections={sections} />
         ) : isRunSheet ? (
@@ -706,6 +744,7 @@ function App() {
             onDeleteItem={(itemId) => handleDeleteItem(activeSection, itemId)}
             onExportData={handleExportData}
             onImportFile={handleImportFile}
+            onLoadRestorationPreset={handleLoadRestorationPreset}
             onResetData={handleResetData}
             onToggleChecklistItem={(itemId, checklistIndex) => handleToggleChecklistItem(activeSection, itemId, checklistIndex)}
             onTogglePin={(itemId) => handleTogglePin(activeSection, itemId)}

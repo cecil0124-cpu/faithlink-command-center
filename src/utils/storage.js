@@ -1,5 +1,5 @@
 import { APP_CONFIG } from '../config/appConfig'
-import { sectionPages, todaysFocusItems } from '../data/dashboardData'
+import { sectionPages, todaysFocusItems, upcomingItems } from '../data/dashboardData'
 import { priorityOptions } from './itemUtils'
 
 const STORAGE_KEY = 'faithlink-command-center-data'
@@ -56,6 +56,15 @@ function defaultFocusItems() {
   }))
 }
 
+function normalizeUpcomingItems(items) {
+  const source = Array.isArray(items) && items.length > 0 ? items : upcomingItems
+
+  return source.map((item, index) => ({
+    when: item.when || 'This week',
+    title: item.title || `Weekly item ${index + 1}`,
+  }))
+}
+
 function defaultRunSheet() {
   return [
     { id: 'pre-service', title: 'Pre-service', items: ['Unlock/check rooms', 'Power on audio, video, lyrics, and livestream systems', 'Confirm volunteers and final slides'] },
@@ -97,6 +106,7 @@ export function getDefaultDashboardData() {
     sections: normalizeItems(cloneData(sectionPages)),
     runSheet: normalizeRunSheet(),
     focusItems: defaultFocusItems(),
+    upcomingItems: normalizeUpcomingItems(),
     activityLog: [],
     lastExportedAt: '',
     lastUpdated: now(),
@@ -112,6 +122,7 @@ export function normalizeDashboardData(data) {
       sections: normalizeItems(sourceData.sections),
       runSheet: normalizeRunSheet(sourceData.runSheet),
       focusItems: sourceData.focusItems || defaultFocusItems(),
+      upcomingItems: normalizeUpcomingItems(sourceData.upcomingItems),
       activityLog: sourceData.activityLog || [],
       lastExportedAt: sourceData.lastExportedAt || '',
       lastUpdated: sourceData.lastUpdated || now(),
@@ -123,6 +134,7 @@ export function normalizeDashboardData(data) {
       sections: normalizeItems(sourceData),
       runSheet: normalizeRunSheet(),
       focusItems: defaultFocusItems(),
+      upcomingItems: normalizeUpcomingItems(),
       activityLog: [],
       lastExportedAt: '',
       lastUpdated: now(),

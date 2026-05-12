@@ -1,6 +1,6 @@
 import { groupTemplatesByCategory } from '../data/workflowTemplates'
 
-function TemplatesPage({ onUseTemplate, templates }) {
+function TemplatesPage({ localTemplateItems = [], onUseTemplate, templates }) {
   const groupedTemplates = groupTemplatesByCategory(templates)
 
   return (
@@ -10,6 +10,26 @@ function TemplatesPage({ onUseTemplate, templates }) {
         <h2>Templates</h2>
         <p>Reusable local workflows for services, media, audio/video, prayer, visitors, web/app work, music, and AI prompts.</p>
       </div>
+
+      {localTemplateItems.length > 0 && (
+        <section className="content-panel template-group">
+          <div className="panel-heading">
+            <span className="eyebrow">{localTemplateItems.length} local item(s)</span>
+            <h2>Loaded Template Notes</h2>
+          </div>
+          <div className="template-list">
+            {localTemplateItems.map((item) => (
+              <article className="template-card" key={item.id || item.title}>
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.detail}</p>
+                  <small>{item.nextStep}</small>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="template-groups">
         {Object.entries(groupedTemplates).map(([group, groupTemplates]) => (
