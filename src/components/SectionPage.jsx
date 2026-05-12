@@ -5,8 +5,9 @@ import ItemForm from './ItemForm'
 import LoginPlaceholder from './LoginPlaceholder'
 import TaskList from './TaskList'
 import TemplatePicker from './TemplatePicker'
+import { isDueSoon, isOverdue } from '../utils/itemUtils'
 
-const statusOrder = ['All', 'New', 'Open', 'In Progress', 'Urgent', 'Completed', 'Draft']
+const filterOrder = ['All', 'New', 'Open', 'In Progress', 'Urgent', 'Completed', 'Draft', 'Overdue', 'Due Soon', 'High Priority', 'Critical']
 
 function SectionPage({
   canEdit,
@@ -16,6 +17,7 @@ function SectionPage({
   isSettings,
   lastUpdated,
   onAddItem,
+  onArchiveCompleted,
   onCompleteItem,
   onConfirmImport,
   onDeleteItem,
@@ -34,16 +36,24 @@ function SectionPage({
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
   const [isResetConfirming, setIsResetConfirming] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
+  const [showArchived, setShowArchived] = useState(false)
   const importInputRef = useRef(null)
   const sectionTemplates = getTemplatesForSection(sectionId)
 
   const availableFilters = useMemo(() => {
-    const statuses = new Set(section.items.map((item) => item.status))
-    return statusOrder.filter((status) => status === 'All' || statuses.has(status))
-  }, [section.items])
+    const visibleItems = section.items.filter((item) => showArchived || !item.archived)
+    const values = new Set(visibleItems.map((item) => item.status))
+
+    if (visibleItems.some((item) => isOverdue(item))) values.add('Overdue')
+    if (visibleItems.some((item) => isDueSoon(item))) values.add('Due Soon')
+    if (visibleItems.some((item) => item.priority === 'High')) values.add('High Priority')
+    if (visibleItems.some((item) => item.priority === 'Critical')) values.add('Critical')
+
+    return filterOrder.filter((filter) => filter === 'All' || values.has(filter))
+  }, [section.items, showArchived])
 
   const filteredItems = useMemo(() => {
-    const items = [...section.items].sort((first, second) => {
+    const items = section.items.filter((item) => showArchived || !item.archived).sort((first, second) => {
       if (first.pinned === second.pinned) {
         return 0
       }
@@ -55,8 +65,27 @@ function SectionPage({
       return items
     }
 
+    if (activeFilter === 'Overdue') {
+      return items.filter((item) => isOverdue(item))
+    }
+
+    if (activeFilter === 'Due Soon') {
+      return items.filter((item) => isDueSoon(item))
+    }
+
+    if (activeFilter === 'High Priority') {
+      return items.filter((item) => item.priority === 'High')
+    }
+
+    if (activeFilter === 'Critical') {
+      return items.filter((item) => item.priority === 'Critical')
+    }
+
     return items.filter((item) => item.status === activeFilter)
-  }, [activeFilter, section.items])
+  }, [activeFilter, section.items, showArchived])
+
+  const archivedCount = section.items.filter((item) => item.archived).length
+  const completedCount = section.items.filter((item) => item.status === 'Completed' && !item.archived).length
 
   function handleAddClick() {
     setEditingItem(null)
@@ -95,7 +124,7 @@ function SectionPage({
   }
 
   return (
-    <section className="section-page">
+    <section className={`section-page ${sectionId === 'sunday' ? 'printable-page' : ''}`}>
       <div className="section-toolbar">
         <div className="section-intro">
           <span className="eyebrow">{section.kicker}</span>
@@ -113,6 +142,14 @@ function SectionPage({
                 Create From Template
               </button>
             )}
+            {sectionId === 'sunday' && (
+              <button className="secondary-button print-button" onClick={() => window.print()} type="button">
+                Print Checklist
+              </button>
+            )}
+            <button className="secondary-button" disabled={completedCount === 0} onClick={onArchiveCompleted} type="button">
+              Archive Completed
+            </button>
           </div>
         )}
       </div>
@@ -121,7 +158,7 @@ function SectionPage({
         <>
           <section className="settings-summary content-panel">
             <div>
-              <span className="eyebrow">Phase 6B</span>
+              <span className="eyebrow">Phase 7</span>
               <h2>Local Settings</h2>
             </div>
             <div className="settings-grid">
@@ -131,6 +168,7 @@ function SectionPage({
               <p><strong>Last updated:</strong> {lastUpdated}</p>
               <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
               <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
+              <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>
             <div className="settings-actions">
               <button className="secondary-button" onClick={onExportData} type="button">
@@ -155,7 +193,7 @@ function SectionPage({
               <span className="eyebrow">Backup</span>
               <h2>Backup Reminder</h2>
             </div>
-            <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly.</p>
+            <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly and before major workflow changes.</p>
             <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
             <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
           </section>
@@ -200,6 +238,7 @@ function SectionPage({
             <div className="settings-grid">
               <p><strong>Total sections:</strong> {dataHealth.totalSections}</p>
               <p><strong>Total items:</strong> {dataHealth.totalItems}</p>
+              <p><strong>Archived items:</strong> {dataHealth.archivedItems}</p>
               <p><strong>Pinned items:</strong> {dataHealth.pinnedItems}</p>
               <p><strong>Today's Focus:</strong> {dataHealth.focusItems}</p>
               <p><strong>Recent Activity:</strong> {dataHealth.activityItems}</p>
@@ -225,6 +264,16 @@ function SectionPage({
             {filter}
           </button>
         ))}
+        {archivedCount > 0 && (
+          <button
+            aria-pressed={showArchived}
+            className={showArchived ? 'active' : ''}
+            onClick={() => setShowArchived((current) => !current)}
+            type="button"
+          >
+            {showArchived ? 'Hide Archived' : `Show Archived (${archivedCount})`}
+          </button>
+        )}
       </div>
 
       <TaskList

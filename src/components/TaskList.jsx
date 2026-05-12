@@ -1,5 +1,7 @@
 import ItemActions from './ItemActions'
+import PriorityBadge from './PriorityBadge'
 import StatusBadge from './StatusBadge'
+import { formatDueDate, isOverdue } from '../utils/itemUtils'
 
 function TaskList({
   canEdit,
@@ -21,7 +23,10 @@ function TaskList({
   return (
     <div className="task-list">
       {items.map((item) => (
-        <article className={`task-row ${item.pinned ? 'pinned-task' : ''}`} key={item.id}>
+        <article
+          className={`task-row ${item.pinned ? 'pinned-task' : ''} ${isOverdue(item) ? 'overdue-task' : ''}`}
+          key={item.id}
+        >
           <div className="task-main">
             <div className="task-title-line">
               <div>
@@ -29,7 +34,11 @@ function TaskList({
                 {item.category && <span className="task-category">{item.category}</span>}
                 <h3>{item.title}</h3>
               </div>
-              <StatusBadge status={item.status} />
+              <div className="badge-stack">
+                {isOverdue(item) && <span className="overdue-badge">Overdue</span>}
+                <PriorityBadge priority={item.priority} />
+                <StatusBadge status={item.status} />
+              </div>
             </div>
 
             <dl className="item-details">
@@ -40,6 +49,14 @@ function TaskList({
               <div>
                 <dt>Status</dt>
                 <dd>{item.status}</dd>
+              </div>
+              <div>
+                <dt>Priority</dt>
+                <dd>{item.priority}</dd>
+              </div>
+              <div>
+                <dt>Due Date</dt>
+                <dd>{formatDueDate(item.dueDate)}</dd>
               </div>
               {item.category && (
                 <div>
@@ -79,6 +96,12 @@ function TaskList({
                 <div>
                   <dt>Last updated</dt>
                   <dd>{item.updatedAt}</dd>
+                </div>
+              )}
+              {item.archived && (
+                <div>
+                  <dt>Archived</dt>
+                  <dd>{item.archivedAt || 'Yes'}</dd>
                 </div>
               )}
             </dl>

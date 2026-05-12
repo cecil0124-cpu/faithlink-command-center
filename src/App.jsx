@@ -8,9 +8,11 @@ import QuickCreate from './components/QuickCreate'
 import SearchResults from './components/SearchResults'
 import SectionPage from './components/SectionPage'
 import Sidebar from './components/Sidebar'
+import SundayRunSheet from './components/SundayRunSheet'
 import SystemStatus from './components/SystemStatus'
 import TemplatesPage from './components/TemplatesPage'
 import TodayFocus from './components/TodayFocus'
+import WeeklyReview from './components/WeeklyReview'
 import {
   editableSectionIds,
   focusCard,
@@ -32,6 +34,7 @@ import {
   updateDashboardData,
   validateImportData,
 } from './services/dataService'
+import { isHighAttentionPriority, isOverdue } from './utils/itemUtils'
 
 const quickCreateMap = {
   'Prayer Request': 'prayer',
@@ -52,19 +55,23 @@ function getItems(sections, sectionId) {
   return sections[sectionId]?.items || []
 }
 
+function getActiveItems(sections, sectionId) {
+  return getItems(sections, sectionId).filter((item) => !item.archived)
+}
+
 function countByStatus(items, statuses) {
   return items.filter((item) => statuses.includes(item.status)).length
 }
 
 function getDynamicOverviewCards(sections) {
-  const sundayOpen = getItems(sections, 'sunday').filter((item) => item.status !== 'Completed').length
-  const mediaActive = countByStatus(getItems(sections, 'media'), ['Open', 'In Progress'])
-  const prayerNeeds = countByStatus(getItems(sections, 'prayer'), ['New', 'Urgent'])
-  const visitorFollowUps = getItems(sections, 'visitors').filter((item) => item.status !== 'Completed').length
-  const musicActive = countByStatus(getItems(sections, 'music'), ['New', 'Open', 'In Progress'])
-  const websiteUpdates = getItems(sections, 'websites').filter((item) => item.status !== 'Completed').length
-  const promptDrafts = countByStatus(getItems(sections, 'prompts'), ['Draft', 'Open', 'In Progress'])
-  const sopDrafts = countByStatus(getItems(sections, 'sops'), ['Draft', 'In Progress'])
+  const sundayOpen = getActiveItems(sections, 'sunday').filter((item) => item.status !== 'Completed').length
+  const mediaActive = countByStatus(getActiveItems(sections, 'media'), ['Open', 'In Progress'])
+  const prayerNeeds = countByStatus(getActiveItems(sections, 'prayer'), ['New', 'Urgent'])
+  const visitorFollowUps = getActiveItems(sections, 'visitors').filter((item) => item.status !== 'Completed').length
+  const musicActive = countByStatus(getActiveItems(sections, 'music'), ['New', 'Open', 'In Progress'])
+  const websiteUpdates = getActiveItems(sections, 'websites').filter((item) => item.status !== 'Completed').length
+  const promptDrafts = countByStatus(getActiveItems(sections, 'prompts'), ['Draft', 'Open', 'In Progress'])
+  const sopDrafts = countByStatus(getActiveItems(sections, 'sops'), ['Draft', 'In Progress'])
 
   return [
     { category: 'Sunday Service', title: `${sundayOpen} Open`, status: 'Incomplete Sunday service tasks.' },
@@ -81,7 +88,7 @@ function getDynamicOverviewCards(sections) {
 function collectPinnedItems(sections) {
   return searchableSectionIds.flatMap((sectionId) =>
     getItems(sections, sectionId)
-      .filter((item) => item.pinned)
+      .filter((item) => item.pinned && !item.archived)
       .map((item) => ({ ...item, sectionId, sectionTitle: sections[sectionId].title })),
   )
 }
@@ -97,12 +104,14 @@ function getNeedsAttention(sections) {
   }
 
   searchableSectionIds.forEach((sectionId) => {
-    pushItems(sectionId, getItems(sections, sectionId).filter((item) => item.status === 'Urgent'))
+    pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => item.status === 'Urgent'))
+    pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => isHighAttentionPriority(item)))
+    pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => isOverdue(item)))
   })
-  pushItems('prayer', getItems(sections, 'prayer').filter((item) => item.status === 'New'))
-  pushItems('visitors', getItems(sections, 'visitors').filter((item) => item.status === 'Open'))
-  pushItems('media', getItems(sections, 'media').filter((item) => item.status === 'Open'))
-  pushItems('sunday', getItems(sections, 'sunday').filter((item) => item.status !== 'Completed'))
+  pushItems('prayer', getActiveItems(sections, 'prayer').filter((item) => item.status === 'New'))
+  pushItems('visitors', getActiveItems(sections, 'visitors').filter((item) => item.status === 'Open'))
+  pushItems('media', getActiveItems(sections, 'media').filter((item) => item.status === 'Open'))
+  pushItems('sunday', getActiveItems(sections, 'sunday').filter((item) => item.status !== 'Completed'))
 
   return results.slice(0, 6)
 }
@@ -115,6 +124,9 @@ function itemMatchesSearch(item, term) {
     item.category,
     item.nextStep,
     item.status,
+    item.priority,
+    item.dueDate,
+    item.archived ? 'archived' : '',
     item.style,
     item.key,
     item.tempo,
@@ -139,7 +151,7 @@ function getSearchResults(sections, searchTerm) {
     .map((sectionId) => ({
       sectionId,
       sectionTitle: sections[sectionId].title,
-      items: getItems(sections, sectionId).filter((item) => itemMatchesSearch(item, searchTerm)),
+      items: getActiveItems(sections, sectionId).filter((item) => itemMatchesSearch(item, searchTerm)),
     }))
     .filter((group) => group.items.length > 0)
 }
@@ -170,6 +182,11 @@ function createTaskFromTemplate(task, template, timestamp) {
     createdAt: timestamp,
     updatedAt: timestamp,
     checklist: (task.checklist || []).map((label) => ({ label, completed: false })),
+    dueDate: task.dueDate || '',
+    priority: task.priority || 'Normal',
+    archived: false,
+    archivedAt: '',
+    completedAt: '',
   }
 }
 
@@ -190,12 +207,14 @@ function App() {
   const isSearchActive = searchTerm.trim().length > 0
   const isOverview = activeSection === 'overview'
   const isTemplates = activeSection === 'templates'
+  const isWeeklyReview = activeSection === 'weeklyReview'
+  const isRunSheet = activeSection === 'runSheet'
   const sectionContent = isOverview || isTemplates ? sectionPages[activeSection] : sections[activeSection]
   const pageTitle = isSearchActive
     ? 'Search Results'
     : isOverview
       ? 'FaithLink Command Center'
-      : currentSection.label
+      : currentSection?.label
   const canEditSection = editableSectionIds.includes(activeSection)
 
   const overviewCards = useMemo(() => getDynamicOverviewCards(sections), [sections])
@@ -206,11 +225,12 @@ function App() {
   const dataHealth = useMemo(() => {
     const allItems = Object.values(sections).flatMap((section) => section.items || [])
     return {
+      archivedItems: allItems.filter((item) => item.archived).length,
       activityItems: appData.activityLog.length,
       focusItems: appData.focusItems.length,
       lastExportedAt: appData.lastExportedAt || '',
       lastUpdated: appData.lastUpdated,
-      pinnedItems: allItems.filter((item) => item.pinned).length,
+      pinnedItems: allItems.filter((item) => item.pinned && !item.archived).length,
       totalItems: getDashboardItemCount(appData),
       totalSections: Object.keys(sections).length,
     }
@@ -263,6 +283,11 @@ function App() {
           id: crypto.randomUUID(),
           pinned: Boolean(item.pinned),
           checklist: item.checklist || [],
+          dueDate: item.dueDate || '',
+          priority: item.priority || 'Normal',
+          archived: false,
+          archivedAt: '',
+          completedAt: item.status === 'Completed' ? timestamp : '',
           createdAt: timestamp,
           updatedAt: timestamp,
         },
@@ -286,7 +311,12 @@ function App() {
   }
 
   function handleUpdateItem(sectionId, item) {
-    const updatedItem = { ...item, updatedAt: getTimestamp() }
+    const timestamp = getTimestamp()
+    const originalItem = getItems(sections, sectionId).find((current) => current.id === item.id)
+    const completedAt = item.status === 'Completed'
+      ? originalItem?.completedAt || timestamp
+      : ''
+    const updatedItem = { ...item, completedAt, updatedAt: timestamp }
     updateSectionItems(
       sectionId,
       (items) => items.map((current) => (current.id === item.id ? updatedItem : current)),
@@ -307,14 +337,35 @@ function App() {
 
   function handleCompleteItem(sectionId, itemId) {
     const completedItem = getItems(sections, sectionId).find((item) => item.id === itemId)
+    const timestamp = getTimestamp()
     updateSectionItems(
       sectionId,
       (items) =>
         items.map((item) =>
-          item.id === itemId ? { ...item, status: 'Completed', updatedAt: getTimestamp() } : item,
+          item.id === itemId ? { ...item, status: 'Completed', completedAt: timestamp, updatedAt: timestamp } : item,
         ),
       'Item marked complete',
       { action: 'Item completed', section: sections[sectionId].title, itemTitle: completedItem?.title },
+    )
+  }
+
+  function handleArchiveCompleted(sectionId) {
+    const timestamp = getTimestamp()
+    const completedItems = getItems(sections, sectionId).filter((item) => item.status === 'Completed' && !item.archived)
+    updateSectionItems(
+      sectionId,
+      (items) =>
+        items.map((item) =>
+          item.status === 'Completed' && !item.archived
+            ? { ...item, archived: true, archivedAt: timestamp, updatedAt: timestamp }
+            : item,
+        ),
+      'Completed items archived',
+      {
+        action: 'Completed archived',
+        section: sections[sectionId].title,
+        itemTitle: `${completedItems.length} item(s)`,
+      },
     )
   }
 
@@ -445,6 +496,52 @@ function App() {
     setImportState({ error: '', fileData: null, preview: null })
   }
 
+  function updateRunSheet(updater, nextMessage, activity) {
+    persistData({ ...appData, runSheet: updater(appData.runSheet || []) }, nextMessage, activity)
+  }
+
+  function handleRunSheetAddItem(sectionId) {
+    updateRunSheet(
+      (runSheet) =>
+        runSheet.map((section) =>
+          section.id === sectionId
+            ? { ...section, items: [...section.items, { id: crypto.randomUUID(), text: '' }] }
+            : section,
+        ),
+      'Run sheet updated',
+      { action: 'Run sheet line added', section: 'Sunday Run Sheet', itemTitle: sectionId },
+    )
+  }
+
+  function handleRunSheetUpdateItem(sectionId, itemId, text) {
+    updateRunSheet(
+      (runSheet) =>
+        runSheet.map((section) =>
+          section.id === sectionId
+            ? {
+                ...section,
+                items: section.items.map((item) => (item.id === itemId ? { ...item, text } : item)),
+              }
+            : section,
+      ),
+      'Run sheet updated',
+      null,
+    )
+  }
+
+  function handleRunSheetDeleteItem(sectionId, itemId) {
+    updateRunSheet(
+      (runSheet) =>
+        runSheet.map((section) =>
+          section.id === sectionId
+            ? { ...section, items: section.items.filter((item) => item.id !== itemId) }
+            : section,
+        ),
+      'Run sheet updated',
+      { action: 'Run sheet line deleted', section: 'Sunday Run Sheet', itemTitle: sectionId },
+    )
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -463,7 +560,7 @@ function App() {
               ? `Searching local dashboard data for "${searchTerm}".`
               : isOverview
                 ? 'A daily command center for ministry, media, music, technology, care, and AI workflows.'
-                : sectionContent.description
+                : sectionContent?.description || 'Review and print weekly service workflow tools.'
           }
           focusCard={focusCard}
           lastUpdated={appData.lastUpdated}
@@ -475,7 +572,7 @@ function App() {
               ? 'Local search across your command center.'
               : isOverview
                 ? 'One place. One view. Everything connected.'
-                : sectionContent.kicker
+                : sectionContent?.kicker || currentSection?.label
           }
           title={pageTitle}
         />
@@ -585,6 +682,15 @@ function App() {
           </section>
         ) : isTemplates ? (
           <TemplatesPage onUseTemplate={handleUseTemplate} templates={workflowTemplates} />
+        ) : isWeeklyReview ? (
+          <WeeklyReview activityLog={appData.activityLog} sections={sections} />
+        ) : isRunSheet ? (
+          <SundayRunSheet
+            onAddItem={handleRunSheetAddItem}
+            onDeleteItem={handleRunSheetDeleteItem}
+            onUpdateItem={handleRunSheetUpdateItem}
+            runSheet={appData.runSheet || []}
+          />
         ) : (
           <SectionPage
             canEdit={canEditSection}
@@ -594,6 +700,7 @@ function App() {
             isSettings={activeSection === 'settings'}
             lastUpdated={appData.lastUpdated}
             onAddItem={(item) => handleAddItem(activeSection, item)}
+            onArchiveCompleted={() => handleArchiveCompleted(activeSection)}
             onCompleteItem={(itemId) => handleCompleteItem(activeSection, itemId)}
             onConfirmImport={handleConfirmImport}
             onDeleteItem={(itemId) => handleDeleteItem(activeSection, itemId)}

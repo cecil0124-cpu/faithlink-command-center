@@ -9,6 +9,8 @@ export const navigationItems = [
   { id: 'prompts', label: 'AI Prompt Library' },
   { id: 'sops', label: 'Tech SOPs' },
   { id: 'templates', label: 'Templates' },
+  { id: 'weeklyReview', label: 'Weekly Review' },
+  { id: 'runSheet', label: 'Sunday Run Sheet' },
   { id: 'settings', label: 'Settings' },
 ]
 

@@ -405,6 +405,52 @@
   white-space: nowrap;
 }
 
+.badge-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.priority-badge,
+.overdue-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.priority-badge.low {
+  background: #eef7f0;
+  color: #28613b;
+}
+
+.priority-badge.normal {
+  background: #f3f3f5;
+  color: #34343a;
+}
+
+.priority-badge.high {
+  background: rgba(212, 175, 55, 0.22);
+  color: #765a00;
+}
+
+.priority-badge.critical,
+.overdue-badge {
+  background: rgba(128, 0, 32, 0.13);
+  color: var(--color-burgundy);
+}
+
+.overdue-task {
+  border-left: 5px solid var(--color-burgundy);
+  background: #fffafa;
+}
+
 .status-badge.new {
   background: #eef4ff;
   color: #23477a;
@@ -802,6 +848,14 @@
   color: var(--color-text);
 }
 
+.search-result-row small,
+.review-row small {
+  display: block;
+  margin-top: 5px;
+  color: var(--color-burgundy);
+  font-weight: 900;
+}
+
 .empty-search h2 {
   margin: 6px 0 8px;
   color: var(--color-black);
@@ -839,6 +893,92 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.review-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border: 1px solid #eeeeef;
+  border-radius: 14px;
+  background: #fafafa;
+  padding: 14px;
+}
+
+.review-row span {
+  color: var(--color-burgundy);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.review-row strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-black);
+}
+
+.review-row p {
+  margin-top: 4px;
+  color: var(--color-text);
+}
+
+.run-sheet-list {
+  display: grid;
+  gap: 16px;
+}
+
+.run-sheet-section {
+  display: grid;
+  gap: 14px;
+}
+
+.run-sheet-items {
+  display: grid;
+  gap: 10px;
+}
+
+.run-sheet-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.run-sheet-item span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.18);
+  color: var(--color-burgundy);
+  font-weight: 900;
+}
+
+.run-sheet-item input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #dadae2;
+  border-radius: 12px;
+  background: #fbfbfc;
+  color: var(--color-black);
+  font: inherit;
+  padding: 11px 12px;
 }
 
 @media (max-width: 1100px) {
@@ -973,6 +1113,11 @@ textarea {
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .review-grid,
+  .review-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .login-placeholder p,
@@ -1079,6 +1224,15 @@ textarea {
   .template-card .primary-button {
     width: 100%;
   }
+
+  .run-sheet-item {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .run-sheet-item .danger-button {
+    grid-column: 2;
+    justify-self: start;
+  }
 }
 
 .hidden-file-input {
@@ -1122,4 +1276,65 @@ textarea {
 .confirm-box .settings-actions,
 .import-preview .settings-actions {
   margin-top: 2px;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .app-shell {
+    display: block;
+    min-height: auto;
+    background: #ffffff;
+  }
+
+  .sidebar,
+  .top-header,
+  .feedback-message,
+  .section-page:not(.printable-page) .section-toolbar,
+  .filter-bar,
+  .item-actions,
+  .print-button,
+  .run-sheet-item .danger-button,
+  .run-sheet-section > .secondary-button {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0;
+  }
+
+  .content-panel,
+  .task-row,
+  .review-row {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .task-row,
+  .review-row,
+  .run-sheet-item {
+    page-break-inside: avoid;
+  }
+
+  .task-row {
+    grid-template-columns: 1fr;
+    border: 1px solid #d8d8d8;
+  }
+
+  .run-sheet-item {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .run-sheet-item input {
+    border: 0;
+    border-bottom: 1px solid #d8d8d8;
+    border-radius: 0;
+    background: #ffffff;
+  }
+
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -1,4 +1,6 @@
 import StatusBadge from './StatusBadge'
+import PriorityBadge from './PriorityBadge'
+import { formatDueDate, isOverdue } from '../utils/itemUtils'
 
 function SearchResults({ groups, onResultClick }) {
   if (groups.length === 0) {
@@ -30,8 +32,13 @@ function SearchResults({ groups, onResultClick }) {
                 <div>
                   <strong>{item.title}</strong>
                   <p>{item.detail}</p>
+                  <small>{formatDueDate(item.dueDate)}</small>
                 </div>
-                <StatusBadge status={item.status} />
+                <div className="badge-stack">
+                  {isOverdue(item) && <span className="overdue-badge">Overdue</span>}
+                  <PriorityBadge priority={item.priority} />
+                  <StatusBadge status={item.status} />
+                </div>
               </button>
             ))}
           </div>

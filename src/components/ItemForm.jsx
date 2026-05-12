@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { priorityOptions } from '../utils/itemUtils'
 
 const statusOptions = ['New', 'Open', 'In Progress', 'Urgent', 'Completed', 'Draft']
 
@@ -9,6 +10,8 @@ const emptyItem = {
   category: '',
   nextStep: '',
   notes: '',
+  dueDate: '',
+  priority: 'Normal',
   key: '',
   tempo: '',
   style: '',
@@ -107,6 +110,31 @@ function ItemForm({ initialItem, isMusic, onCancel, onSubmit }) {
                 </option>
               ))}
             </select>
+          </label>
+
+          <label>
+            Priority
+            <select
+              onChange={(event) => updateField('priority', event.target.value)}
+              value={formData.priority}
+            >
+              {priorityOptions.map((priority) => (
+                <option key={priority} value={priority}>
+                  {priority}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="form-grid">
+          <label>
+            Due Date
+            <input
+              onChange={(event) => updateField('dueDate', event.target.value)}
+              type="date"
+              value={formData.dueDate}
+            />
           </label>
 
           <label>

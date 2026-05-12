@@ -1,5 +1,6 @@
 import { APP_CONFIG } from '../config/appConfig'
 import { sectionPages, todaysFocusItems } from '../data/dashboardData'
+import { priorityOptions } from './itemUtils'
 
 const STORAGE_KEY = 'faithlink-command-center-data'
 
@@ -30,8 +31,13 @@ function normalizeItems(data) {
         ...item,
         id: item.id || createStableId(sectionId, item, index),
         pinned: Boolean(item.pinned),
+        archived: Boolean(item.archived),
+        archivedAt: item.archivedAt || '',
+        dueDate: item.dueDate || '',
+        priority: priorityOptions.includes(item.priority) ? item.priority : 'Normal',
         createdAt: item.createdAt || timestamp,
         updatedAt: item.updatedAt || item.createdAt || timestamp,
+        completedAt: item.completedAt || '',
         checklist: (item.checklist || []).map((checklistItem) => ({
           label: checklistItem.label || checklistItem,
           completed: Boolean(checklistItem.completed),
@@ -50,6 +56,35 @@ function defaultFocusItems() {
   }))
 }
 
+function defaultRunSheet() {
+  return [
+    { id: 'pre-service', title: 'Pre-service', items: ['Unlock/check rooms', 'Power on audio, video, lyrics, and livestream systems', 'Confirm volunteers and final slides'] },
+    { id: 'opening', title: 'Opening', items: ['Welcome', 'Opening scripture or call to worship'] },
+    { id: 'praise-worship', title: 'Praise & Worship', items: ['Song 1', 'Song 2', 'Song 3 or response song'] },
+    { id: 'prayer', title: 'Prayer', items: ['Corporate prayer', 'Special prayer needs'] },
+    { id: 'announcements', title: 'Announcements', items: ['Church announcements', 'Upcoming events'] },
+    { id: 'giving', title: 'Giving', items: ['Giving moment', 'Offering instructions'] },
+    { id: 'sermon', title: 'Sermon', items: ['Sermon title', 'Scripture text', 'Speaker notes'] },
+    { id: 'altar-response', title: 'Altar/Response', items: ['Altar call', 'Prayer team ready', 'Response song'] },
+    { id: 'closing', title: 'Closing', items: ['Benediction', 'Final reminders'] },
+    { id: 'post-service-media', title: 'Post-service media tasks', items: ['Stop stream and recording', 'Save/archive recordings', 'Capture sermon edit notes'] },
+  ]
+}
+
+function normalizeRunSheet(runSheet) {
+  const source = Array.isArray(runSheet) && runSheet.length > 0 ? runSheet : defaultRunSheet()
+
+  return source.map((section, sectionIndex) => ({
+    id: section.id || `run-sheet-${sectionIndex}`,
+    title: section.title || 'Service Section',
+    items: (section.items || []).map((item, itemIndex) =>
+      typeof item === 'string'
+        ? { id: `${section.id || sectionIndex}-item-${itemIndex}`, text: item }
+        : { id: item.id || `${section.id || sectionIndex}-item-${itemIndex}`, text: item.text || '' },
+    ),
+  }))
+}
+
 export function getTotalItems(data) {
   return Object.values(data?.sections || {}).reduce(
     (total, section) => total + (section.items?.length || 0),
@@ -60,6 +95,7 @@ export function getTotalItems(data) {
 export function getDefaultDashboardData() {
   return {
     sections: normalizeItems(cloneData(sectionPages)),
+    runSheet: normalizeRunSheet(),
     focusItems: defaultFocusItems(),
     activityLog: [],
     lastExportedAt: '',
@@ -74,6 +110,7 @@ export function normalizeDashboardData(data) {
     return {
       ...sourceData,
       sections: normalizeItems(sourceData.sections),
+      runSheet: normalizeRunSheet(sourceData.runSheet),
       focusItems: sourceData.focusItems || defaultFocusItems(),
       activityLog: sourceData.activityLog || [],
       lastExportedAt: sourceData.lastExportedAt || '',
@@ -84,6 +121,7 @@ export function normalizeDashboardData(data) {
   if (sourceData && typeof sourceData === 'object') {
     return {
       sections: normalizeItems(sourceData),
+      runSheet: normalizeRunSheet(),
       focusItems: defaultFocusItems(),
       activityLog: [],
       lastExportedAt: '',
