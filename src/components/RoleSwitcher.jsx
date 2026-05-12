@@ -1,17 +1,19 @@
 import { roleOptions } from '../config/rolesConfig'
 
-function RoleSwitcher({ currentRoleId, onRoleChange }) {
+function RoleSwitcher({ currentRoleId, onRoleChange, realRole }) {
+  const canPreview = !realRole || realRole === 'admin'
+
   return (
     <label className="role-switcher">
       <span>Role Preview</span>
-      <select onChange={(event) => onRoleChange(event.target.value)} value={currentRoleId}>
+      <select disabled={!canPreview} onChange={(event) => onRoleChange(event.target.value)} value={currentRoleId}>
         {roleOptions.map((role) => (
           <option key={role.id} value={role.id}>
             {role.label}
           </option>
         ))}
       </select>
-      <small>Local role preview only - real login will be added later.</small>
+      <small>{canPreview ? `Real Role: ${realRole || 'loading'}. Preview is local only.` : `Real Role: ${realRole}. Preview locked for this account.`}</small>
     </label>
   )
 }

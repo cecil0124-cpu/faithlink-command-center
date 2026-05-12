@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import ActivityLog from './components/ActivityLog'
 import AppInstallPrep from './components/AppInstallPrep'
@@ -37,10 +37,16 @@ import {
 } from './data/workflowTemplates'
 import {
   exportDashboardData,
+  exportCloudBackup,
+  exportLocalBackup,
   getDashboardData,
   getDashboardItemCount,
+  getSyncedDashboardData,
+  loadLocalDashboardData,
+  migrateLocalBackupToCloud,
   prepareDashboardData,
   resetDashboardData,
+  saveLocalDashboardData,
   updateDashboardData,
   validateImportData,
 } from './services/dataService'
@@ -264,18 +270,27 @@ function createTaskFromTemplate(task, template, timestamp) {
 }
 
 function App() {
-  const { authLoading, isAuthenticated } = useAuth()
+  const { authLoading, currentUser, isAuthenticated, realRole, userProfile } = useAuth()
   const [activeSection, setActiveSection] = useState('overview')
   const [appData, setAppData] = useState(() => getDashboardData())
+  const [cloudStatus, setCloudStatus] = useState({
+    error: '',
+    lastCloudSaveAt: '',
+    lastCloudLoadAt: '',
+    migrationStatus: 'Not started',
+    firestoreStatus: 'Waiting for sign-in',
+  })
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const [message, setMessage] = useState('')
-  const [selectedRoleId, setSelectedRoleId] = useState(() => getStoredRoleId())
+  const [previewRoleId, setPreviewRoleId] = useState(() => getStoredRoleId())
   const [searchTerm, setSearchTerm] = useState('')
   const [quickCreateSection, setQuickCreateSection] = useState(null)
   const [importState, setImportState] = useState({ error: '', fileData: null, preview: null })
 
+  const selectedRoleId = realRole === 'admin' ? previewRoleId : realRole || previewRoleId
   const sections = appData.sections
   const roleConfig = getRoleConfig(selectedRoleId)
+  const previewRoleConfig = getRoleConfig(previewRoleId)
   const visibleNavigationItems = navigationItems.filter((item) => canAccessSection(selectedRoleId, item.id))
   const currentSection = useMemo(
     () => navigationItems.find((item) => item.id === activeSection),
@@ -336,6 +351,68 @@ function App() {
     }
   }, [appData, sections])
 
+  useEffect(() => {
+    let isActive = true
+
+    async function loadCloudData() {
+      if (!currentUser) {
+        return
+      }
+
+      setCloudStatus((current) => ({
+        ...current,
+        error: '',
+        firestoreStatus: 'Loading cloud dashboard',
+      }))
+
+      try {
+        const cloudData = await getSyncedDashboardData(currentUser)
+
+        if (!isActive) {
+          return
+        }
+
+        setAppData(cloudData)
+        setCloudStatus((current) => ({
+          ...current,
+          error: '',
+          firestoreStatus: 'Connected',
+          lastCloudLoadAt: getTimestamp(),
+        }))
+      } catch (error) {
+        if (!isActive) {
+          return
+        }
+
+        setCloudStatus((current) => ({
+          ...current,
+          error: error.message || 'Cloud dashboard could not be loaded. Your local backup was not overwritten.',
+          firestoreStatus: 'Cloud load failed',
+        }))
+        setMessage('Cloud load failed. Local backup is still available in Settings.')
+      }
+    }
+
+    loadCloudData()
+
+    return () => {
+      isActive = false
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    if (!roleConfig.allowedSections.includes(activeSection)) {
+      setActiveSection('overview')
+      setSearchTerm('')
+    }
+  }, [activeSection, roleConfig.allowedSections])
+
+  useEffect(() => {
+    if (realRole && realRole !== 'admin') {
+      setPreviewRoleId(realRole)
+    }
+  }, [realRole])
+
   if (APP_CONFIG.authRequired && authLoading) {
     return (
       <main className="auth-shell">
@@ -370,7 +447,25 @@ function App() {
     }
 
     setAppData(dataWithTimestamp)
-    updateDashboardData(dataWithTimestamp)
+    updateDashboardData(dataWithTimestamp, currentUser)
+      .then(() => {
+        if (currentUser) {
+          setCloudStatus((current) => ({
+            ...current,
+            error: '',
+            firestoreStatus: 'Connected',
+            lastCloudSaveAt: getTimestamp(),
+          }))
+        }
+      })
+      .catch((error) => {
+        setCloudStatus((current) => ({
+          ...current,
+          error: error.message || 'Cloud save failed. Local backup was kept.',
+          firestoreStatus: 'Cloud save failed',
+        }))
+        setMessage('Cloud save failed. Local backup was kept.')
+      })
     setMessage(nextMessage)
   }
 
@@ -537,7 +632,7 @@ function App() {
       lastUpdated: timestamp,
     }
     setAppData(dataWithActivity)
-    updateDashboardData(dataWithActivity)
+    updateDashboardData(dataWithActivity, currentUser)
     setMessage('Data reset')
   }
 
@@ -554,7 +649,7 @@ function App() {
     }
 
     setAppData(dataWithActivity)
-    updateDashboardData(dataWithActivity)
+    updateDashboardData(dataWithActivity, currentUser)
     setImportState({ error: '', fileData: null, preview: null })
     setMessage('Restoration setup loaded')
   }
@@ -562,8 +657,8 @@ function App() {
   function handleRoleChange(roleId) {
     const nextRole = getRoleConfig(roleId)
     saveStoredRoleId(roleId)
-    setSelectedRoleId(roleId)
-    if (!nextRole.allowedSections.includes(activeSection)) {
+    setPreviewRoleId(roleId)
+    if (!realRole && !nextRole.allowedSections.includes(activeSection)) {
       setActiveSection('overview')
       setSearchTerm('')
     }
@@ -608,6 +703,95 @@ function App() {
     )
   }
 
+  function handleExportLocalBackup() {
+    const localData = loadLocalDashboardData()
+    exportLocalBackup(localData)
+    setMessage('Local backup created')
+  }
+
+  async function handleExportCloudBackup() {
+    try {
+      const exportedAt = await exportCloudBackup(currentUser)
+      persistData(
+        { ...appData, lastExportedAt: exportedAt || appData.lastExportedAt },
+        'Cloud backup created',
+        { action: 'Cloud backup exported', section: 'Settings', itemTitle: 'Cloud JSON backup' },
+      )
+    } catch (error) {
+      setCloudStatus((current) => ({
+        ...current,
+        error: error.message || 'Cloud backup export failed.',
+      }))
+      setMessage('Cloud backup export failed.')
+    }
+  }
+
+  async function handleLoadCloudData() {
+    try {
+      const cloudData = await getSyncedDashboardData(currentUser)
+      setAppData(cloudData)
+      setCloudStatus((current) => ({
+        ...current,
+        error: '',
+        firestoreStatus: 'Connected',
+        lastCloudLoadAt: getTimestamp(),
+      }))
+      setMessage('Cloud data loaded')
+    } catch (error) {
+      setCloudStatus((current) => ({
+        ...current,
+        error: error.message || 'Cloud dashboard could not be loaded. Your local backup was not overwritten.',
+        firestoreStatus: 'Cloud load failed',
+      }))
+      setMessage('Cloud load failed. Local backup was not overwritten.')
+    }
+  }
+
+  async function handleMigrateLocalDataToCloud() {
+    if (!currentUser) {
+      setMessage('Sign in before migrating local data to cloud.')
+      return
+    }
+
+    const confirmed = window.confirm('This will copy your current browser data into your cloud dashboard for this signed-in account.')
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const localData = loadLocalDashboardData()
+      const migratedData = await migrateLocalBackupToCloud(currentUser, localData)
+      const timestamp = getTimestamp()
+      const dataWithActivity = {
+        ...migratedData,
+        activityLog: [
+          createActivity('Local data migrated to Firestore', 'Settings', 'Cloud dashboard', timestamp),
+          ...(migratedData.activityLog || []),
+        ].slice(0, 30),
+        lastUpdated: timestamp,
+      }
+
+      await updateDashboardData(dataWithActivity, currentUser)
+      setAppData(dataWithActivity)
+      setCloudStatus((current) => ({
+        ...current,
+        error: '',
+        firestoreStatus: 'Connected',
+        migrationStatus: `Completed ${timestamp}`,
+        lastCloudSaveAt: timestamp,
+      }))
+      setMessage('Local data migrated to Firestore')
+    } catch (error) {
+      setCloudStatus((current) => ({
+        ...current,
+        error: error.message || 'Migration failed. Local data was not deleted.',
+        migrationStatus: 'Failed',
+      }))
+      setMessage('Migration failed. Local data was not deleted.')
+    }
+  }
+
   async function handleImportFile(file) {
     if (!file) {
       setImportState({ error: '', fileData: null, preview: null })
@@ -633,13 +817,29 @@ function App() {
     }
   }
 
-  function handleConfirmImport() {
+  function handleConfirmImport(destination = 'local') {
     if (!importState.fileData) {
       return
     }
 
-    persistData(importState.fileData, 'Data imported', {
-      action: 'Data imported',
+    if (destination === 'cloud') {
+      const confirmed = window.confirm('Import this backup into your cloud dashboard for the signed-in account? This will overwrite the cloud dashboard.')
+
+      if (!confirmed) {
+        return
+      }
+    }
+
+    if (destination === 'local') {
+      saveLocalDashboardData(importState.fileData)
+      setImportState({ error: '', fileData: null, preview: null })
+      setMessage('Data imported to local backup only')
+      return
+    }
+
+    const nextMessage = 'Data imported to cloud dashboard'
+    persistData(importState.fileData, nextMessage, {
+      action: 'Data imported to cloud',
       section: 'Settings',
       itemTitle: 'JSON backup',
     })
@@ -743,7 +943,7 @@ function App() {
           lastUpdated={appData.lastUpdated}
           onClearSearch={() => setSearchTerm('')}
           onSearchChange={setSearchTerm}
-          roleSwitcher={<RoleSwitcher currentRoleId={selectedRoleId} onRoleChange={handleRoleChange} />}
+          roleSwitcher={<RoleSwitcher currentRoleId={previewRoleId} onRoleChange={handleRoleChange} realRole={realRole} />}
           searchTerm={searchTerm}
           tagline={
             isSearchActive
@@ -819,9 +1019,10 @@ function App() {
                 </div>
                 <div className="metadata-grid">
                   <p><strong>Active Workspace:</strong> Restoration Ministries</p>
-                  <p><strong>Data Mode:</strong> Local Browser Storage</p>
-                  <p><strong>Role:</strong> {roleConfig.label}</p>
-                  <p><strong>Deployment:</strong> {APP_CONFIG.hostingStatus} / Firebase Prep</p>
+                  <p><strong>Data Mode:</strong> Firestore Cloud Sync</p>
+                  <p><strong>Real Role:</strong> {userProfile?.role || 'Loading'}</p>
+                  <p><strong>Preview Role:</strong> {previewRoleConfig.label}</p>
+                  <p><strong>Deployment:</strong> {APP_CONFIG.hostingStatus} / {APP_CONFIG.releaseStatus}</p>
                 </div>
               </section>
               <section className="content-panel identity-card">
@@ -896,7 +1097,7 @@ function App() {
               </section>
               {selectedRoleId === 'admin' && <QuickCreate items={quickCreateItems} onCreate={handleQuickCreate} />}
               <ActivityLog activities={appData.activityLog} />
-              <SystemStatus />
+              <SystemStatus cloudStatus={cloudStatus} />
             </div>
           </section>
         ) : isTemplates ? (
@@ -927,6 +1128,7 @@ function App() {
             actionPermissions={activeActionPermissions}
             canEdit={canEditSection}
             dataHealth={dataHealth}
+            cloudStatus={cloudStatus}
             importState={importState}
             isMusic={activeSection === 'music'}
             isSettings={activeSection === 'settings'}
@@ -936,15 +1138,22 @@ function App() {
             onCompleteItem={(itemId) => handleCompleteItem(activeSection, itemId)}
             onConfirmImport={handleConfirmImport}
             onDeleteItem={(itemId) => handleDeleteItem(activeSection, itemId)}
+            onExportCloudBackup={handleExportCloudBackup}
             onExportData={handleExportData}
+            onExportLocalBackup={handleExportLocalBackup}
             onImportFile={handleImportFile}
+            onLoadCloudData={handleLoadCloudData}
             onLoadRestorationPreset={handleLoadRestorationPreset}
+            onMigrateLocalDataToCloud={handleMigrateLocalDataToCloud}
             onResetData={handleResetData}
             onToggleChecklistItem={(itemId, checklistIndex) => handleToggleChecklistItem(activeSection, itemId, checklistIndex)}
             onTogglePin={(itemId) => handleTogglePin(activeSection, itemId)}
             onUpdateItem={(item) => handleUpdateItem(activeSection, item)}
             onUseTemplate={handleUseTemplate}
             roleConfig={roleConfig}
+            previewRoleConfig={previewRoleConfig}
+            previewRoleId={previewRoleId}
+            realRole={realRole}
             section={sectionContent}
             sectionId={activeSection}
           />

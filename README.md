@@ -2,6 +2,73 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 14 Firestore Sync + Security
+
+Status: `FaithLink Command Center v1.0` candidate.
+
+- Firebase Hosting is live.
+- Firebase Authentication Email/Password is active.
+- Cloud Firestore sync is connected for signed-in users.
+- Dashboard data is stored at `userDashboards/{uid}` and protected by Firebase Auth.
+- User profiles are stored at `users/{uid}` with `email`, `displayName`, `role`, timestamps, and last login.
+- localStorage backup/export/import remains available as a safety layer.
+- Restoration Ministries remains a workspace/preset inside FaithLink.
+
+Required Firebase Console steps:
+
+- Enable Authentication.
+- Enable the Email/Password provider.
+- Enable Cloud Firestore, preferably starting in production mode.
+- Deploy `firestore.rules` before storing private prayer, visitor, or team data.
+
+Required `.env.local`:
+
+```bash
+VITE_FIREBASE_API_KEY=...
+VITE_FIREBASE_AUTH_DOMAIN=...
+VITE_FIREBASE_PROJECT_ID=...
+VITE_FIREBASE_STORAGE_BUCKET=...
+VITE_FIREBASE_MESSAGING_SENDER_ID=...
+VITE_FIREBASE_APP_ID=...
+VITE_ADMIN_EMAIL=your_admin_email@example.com
+```
+
+Build and deploy:
+
+```bash
+npm run lint
+npm run build
+firebase deploy --only firestore:rules
+firebase deploy --only hosting
+# or deploy both configured targets
+firebase deploy
+```
+
+Security warnings:
+
+- Do not store private prayer requests, visitor data, or private team notes until Firestore is enabled and rules are deployed.
+- New users default to `member`; only `VITE_ADMIN_EMAIL` becomes `admin` on profile creation.
+- Users cannot update their own role through normal client profile updates after creation. Manually review roles in Firestore before inviting team members.
+
+Migration:
+
+- Open Settings.
+- Export Local Backup first.
+- Use `Migrate Local Data to Cloud`.
+- Confirm the warning.
+- Export Cloud Backup after migration.
+- Test by signing in on another browser/device.
+
+Rollback plan:
+
+- Export a cloud backup.
+- Restore a local backup through Settings.
+- Set `APP_CONFIG.dataMode` back to `localStorage` if needed.
+- Redeploy hosting.
+- Do not delete Firestore data until the local rollback is verified.
+
+See `docs/firestore-sync-setup.md` for full setup, test, and rollback notes.
+
 ## Phase 13B Firebase Auth Only
 
 - Adds Firebase Authentication with Email/Password sign-in.
@@ -126,7 +193,7 @@ Vite requires browser-exposed environment variables to start with `VITE_`.
 - `docs/migration-plan.md`: localStorage to Firestore migration plan.
 - `docs/production-readiness.md`: readiness checklist before real team/private data.
 
-Current status: Firebase is not connected. Next phase: Firebase project setup and optional hosting.
+Current status is Phase 14: Firebase Hosting, Auth, and Firestore sync are connected. Older phase notes below are retained as implementation history.
 
 ## Phase 8 Restoration Setup Preset
 
@@ -142,7 +209,7 @@ Open Settings, review the `Restoration Setup Preset` panel, and click `Load Rest
 
 Loading this preset replaces the current browser localStorage dashboard. Export a backup first if you need to preserve the current data.
 
-The preset is local-only. Firebase, authentication, and Firestore are still not connected.
+The preset still loads through the local dashboard data flow, then syncs to Firestore for the signed-in user when cloud sync is active.
 
 ## Phase 9 Local Role Preview
 
@@ -201,9 +268,7 @@ Importing replaces the current local dashboard data. Export a fresh backup first
 
 ## Why Backups Matter
 
-This phase still uses browser localStorage. localStorage is browser-specific and device-specific. Clearing site data, changing browsers, or using another computer can make local data unavailable. Manual backup/import is the safety bridge until Firebase sync is connected.
-
-Future Firebase sync will replace manual backup/import for everyday use, but exports may remain useful for extra safety.
+Cloud sync is now active for signed-in users, but localStorage backups remain a safety bridge. Export backups before major changes, role tests, browser cleanup, or rollback work.
 
 ## Workflow Templates
 
@@ -221,7 +286,7 @@ Use `Archive Completed` inside editable sections after review. Archived items st
 
 ## Firebase Status
 
-Firebase is not connected yet. Firebase is not installed yet. The app remains localStorage-based through `src/services/dataService.js`.
+Firebase Hosting, Firebase Auth, and Cloud Firestore are connected. `src/services/dataService.js` keeps localStorage backup tools available while routing signed-in dashboard data through Firestore.
 
 ## Run Locally
 
@@ -239,10 +304,9 @@ npm run build
 
 ## Current Limitations
 
-- Firebase is not connected.
-- Authentication is not connected.
-- Firestore is not connected.
-- Backups are manual.
-- Imported data replaces current local data after confirmation.
-- Data is stored only in the current browser's localStorage.
+- Firestore v1 is personal-dashboard scoped, not shared team collections.
+- Role assignment is simple: `VITE_ADMIN_EMAIL` creates the admin profile; other users default to `member`.
+- Backups are still manual.
+- Importing to cloud requires confirmation because it overwrites the signed-in user's dashboard.
+- localStorage backups are browser-specific.
 - Print output depends on the browser's print dialog and selected paper settings.

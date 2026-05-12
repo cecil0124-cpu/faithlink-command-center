@@ -13,6 +13,7 @@ const filterOrder = ['All', 'New', 'Open', 'In Progress', 'Urgent', 'Completed',
 function SectionPage({
   actionPermissions,
   canEdit,
+  cloudStatus,
   dataHealth,
   importState,
   isMusic,
@@ -22,16 +23,22 @@ function SectionPage({
   onArchiveCompleted,
   onCompleteItem,
   onConfirmImport,
+  onExportCloudBackup,
   onLoadRestorationPreset,
   onDeleteItem,
   onExportData,
+  onExportLocalBackup,
   onImportFile,
+  onLoadCloudData,
+  onMigrateLocalDataToCloud,
   onResetData,
   onToggleChecklistItem,
   onTogglePin,
   onUpdateItem,
   onUseTemplate,
   roleConfig,
+  previewRoleConfig,
+  realRole,
   section,
   sectionId,
 }) {
@@ -196,25 +203,29 @@ function SectionPage({
         <>
           <section className="settings-summary content-panel">
             <div>
-              <span className="eyebrow">Phase 13B</span>
-              <h2>Local Settings</h2>
+              <span className="eyebrow">Phase 14</span>
+              <h2>System Settings</h2>
             </div>
             <div className="settings-grid">
               <p><strong>App name:</strong> {APP_CONFIG.appName}</p>
               <p><strong>Version:</strong> {APP_CONFIG.version}</p>
-              <p><strong>Data mode:</strong> Browser {APP_CONFIG.dataMode}</p>
+              <p><strong>Data mode:</strong> Firestore Cloud Sync</p>
               <p><strong>Last updated:</strong> {lastUpdated}</p>
-              <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
-              <p><strong>Firebase Project:</strong> {APP_CONFIG.firebaseConnected ? 'Connected' : 'Not Connected'}</p>
+              <p><strong>Firebase:</strong> {APP_CONFIG.firebaseConnected ? 'Connected' : 'Not Connected'}</p>
               <p><strong>Hosting:</strong> {APP_CONFIG.hostingStatus}</p>
-              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Email/Password Enabled' : 'Not Connected'}</p>
+              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Connected' : 'Not Connected'}</p>
               <p><strong>Firestore:</strong> {APP_CONFIG.firestoreConnected ? 'Connected' : 'Not Connected'}</p>
-              <p><strong>Deployment Phase:</strong> 13B Auth / Local Data</p>
+              <p><strong>Deployment Phase:</strong> {APP_CONFIG.deploymentPhase}</p>
               <p><strong>Sync:</strong> {APP_CONFIG.syncStatus}</p>
               <p><strong>Signed-in user:</strong> {currentUser?.email || 'Not signed in'}</p>
+              <p><strong>Real role:</strong> {realRole || 'Loading profile'}</p>
+              <p><strong>Last cloud save:</strong> {cloudStatus?.lastCloudSaveAt || 'Not yet'}</p>
               <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
+              <p><strong>Local backup:</strong> Available</p>
               <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>
+            <p className="backup-reminder">Cloud sync is now enabled. Export backups before major changes. Firestore data is tied to your signed-in account.</p>
+            {cloudStatus?.error && <p className="import-error">{cloudStatus.error}</p>}
             <div className="settings-actions">
               {rolePermissions.canExport ? (
                 <button className="secondary-button" onClick={onExportData} type="button">
@@ -238,6 +249,28 @@ function SectionPage({
                   <button className="secondary-button" onClick={() => setIsResetConfirming(false)} type="button">Cancel</button>
                 </div>
               )}
+            </div>
+          </section>
+
+          <section className="content-panel backup-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Cloud Sync</span>
+              <h2>Cloud Sync Migration</h2>
+            </div>
+            <div className="settings-grid">
+              <p><strong>Current mode:</strong> Firestore Cloud Sync</p>
+              <p><strong>Signed-in email:</strong> {currentUser?.email || 'Not signed in'}</p>
+              <p><strong>Firestore status:</strong> {cloudStatus?.firestoreStatus || 'Not checked'}</p>
+              <p><strong>Local backup status:</strong> Available</p>
+              <p><strong>Migration status:</strong> {cloudStatus?.migrationStatus || 'Not started'}</p>
+              <p><strong>Last cloud load:</strong> {cloudStatus?.lastCloudLoadAt || 'Not yet'}</p>
+            </div>
+            <p className="backup-reminder">This will copy your current browser data into your cloud dashboard for this signed-in account.</p>
+            <div className="settings-actions">
+              <button className="secondary-button" onClick={onExportLocalBackup} type="button">Export Local Backup</button>
+              <button className="primary-button" onClick={onMigrateLocalDataToCloud} type="button">Migrate Local Data to Cloud</button>
+              <button className="secondary-button" onClick={onLoadCloudData} type="button">Load Cloud Data</button>
+              <button className="secondary-button" onClick={onExportCloudBackup} type="button">Export Cloud Backup</button>
             </div>
           </section>
 
@@ -271,11 +304,13 @@ function SectionPage({
               <h2>Backup Reminder</h2>
             </div>
             <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly and before major workflow changes.</p>
-            <p className="backup-reminder">Until Firebase sync is connected, data is saved only in this browser on this device. Export backups before switching devices or clearing browser data.</p>
-            <p className="backup-reminder">Signing in does not sync dashboard data yet. Data remains saved only in this browser.</p>
+            <p className="backup-reminder">Cloud sync is active, and localStorage remains available as a manual safety backup.</p>
             <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
             {rolePermissions.canExport ? (
-              <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
+              <div className="settings-actions">
+                <button className="primary-button" onClick={onExportLocalBackup} type="button">Export Local Backup</button>
+                <button className="secondary-button" onClick={onExportCloudBackup} type="button">Export Cloud Backup</button>
+              </div>
             ) : (
               <p className="role-note">Not available in this role preview.</p>
             )}
@@ -302,7 +337,7 @@ function SectionPage({
               <span className="eyebrow">Restore</span>
               <h2>Import Data</h2>
             </div>
-            <p className="backup-reminder">Importing will replace your current local dashboard data. Export a backup first if needed.</p>
+            <p className="backup-reminder">In Firestore mode, imports preview first. Default restore is local backup only; cloud import requires confirmation.</p>
             <input
               accept="application/json,.json"
               className="hidden-file-input"
@@ -322,7 +357,8 @@ function SectionPage({
                 <p><strong>Sections:</strong> {importState.preview.sectionsCount}</p>
                 <p><strong>Total items:</strong> {importState.preview.totalItems}</p>
                 <div className="settings-actions">
-                  <button className="danger-button" onClick={onConfirmImport} type="button">Confirm Import</button>
+                  <button className="secondary-button" onClick={() => onConfirmImport('local')} type="button">Import to Local Backup Only</button>
+                  <button className="danger-button" onClick={() => onConfirmImport('cloud')} type="button">Import to Cloud Dashboard</button>
                   <button className="secondary-button" onClick={() => onImportFile(null)} type="button">Cancel</button>
                 </div>
               </div>
@@ -347,6 +383,7 @@ function SectionPage({
               <p><strong>Signed-in email:</strong> {currentUser?.email || 'Not signed in'}</p>
               <p><strong>User UID:</strong> {currentUser?.uid || 'Not available'}</p>
               <p><strong>Data sync:</strong> {APP_CONFIG.syncStatus}</p>
+              <p><strong>Real role:</strong> {realRole || 'Loading profile'}</p>
             </div>
             <div className="settings-actions">
               <button className="secondary-button" onClick={handlePasswordReset} type="button">
@@ -356,22 +393,23 @@ function SectionPage({
                 Sign Out
               </button>
             </div>
-            <p className="backup-reminder">Signing in does not sync dashboard data yet. Data remains saved only in this browser.</p>
+            <p className="backup-reminder">Firestore data is private to this signed-in account under v1 security rules.</p>
           </section>
 
           <section className="content-panel data-health-panel">
             <div className="panel-heading">
-              <span className="eyebrow">Local Roles</span>
+              <span className="eyebrow">Roles</span>
               <h2>Role Preview</h2>
             </div>
             <div className="settings-grid">
-              <p><strong>Current role:</strong> {roleConfig.label}</p>
+              <p><strong>Real Role:</strong> {realRole || 'Loading profile'}</p>
+              <p><strong>Preview Role:</strong> {previewRoleConfig?.label || roleConfig.label}</p>
               <p><strong>Current Firebase user:</strong> {currentUser?.email || 'Not signed in'}</p>
               <p><strong>Description:</strong> {roleConfig.description}</p>
               <p><strong>Allowed sections:</strong> {roleConfig.allowedSections.join(', ')}</p>
               <p><strong>Enabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => enabled).map(([key]) => key).join(', ') || 'None'}</p>
               <p><strong>Disabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => !enabled).map(([key]) => key).join(', ') || 'None'}</p>
-              <p><strong>Security note:</strong> Role preview is local only. Firestore security rules will enforce real role permissions in the next cloud data phase.</p>
+              <p><strong>Security note:</strong> Firestore profile role is the real permission source. Preview role remains a local admin/dev aid.</p>
             </div>
           </section>
 

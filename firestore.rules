@@ -1,0 +1,33 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role;
+      allow delete: if false;
+    }
+
+    match /userDashboards/{userId} {
+      allow read, create, update: if isOwner(userId);
+      allow delete: if false;
+    }
+
+    // Shared team collections are planned for later role-based releases.
+    // v1 denies all unmatched documents so prayer requests, visitor data,
+    // and private team records are never publicly readable or writable.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

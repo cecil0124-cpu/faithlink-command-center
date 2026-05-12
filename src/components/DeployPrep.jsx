@@ -5,30 +5,32 @@ const envVariables = [
   'VITE_FIREBASE_STORAGE_BUCKET',
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
   'VITE_FIREBASE_APP_ID',
+  'VITE_ADMIN_EMAIL',
 ]
 
 const prepCards = [
   {
     title: 'Firebase Hosting',
-    status: 'Ready for Deployment',
+    status: 'Active',
     items: [
-      'Hosting Status: Ready for Deployment',
+      'Hosting: Active',
       'Build Output: dist',
-      'Data Mode: localStorage',
-      'Firestore: Not Connected',
-      'Auth: Connected',
-      'Deploy Command: firebase deploy --only hosting',
+      'Data Mode: Firestore Cloud Sync',
+      'Firestore: Ready/Connected',
+      'Auth: Active',
+      'Deploy Command: firebase deploy',
     ],
   },
   {
     title: 'Firebase Setup',
-    status: 'Auth Connected',
+    status: 'Cloud Sync Ready',
     items: [
       'Firebase app config loaded from .env.local',
       'Email/Password Auth connected',
-      'Firestore is still not connected',
-      'Data sync is still not connected',
-      'Review security rules before private data',
+      'Firestore client connected',
+      'Rules: firestore.rules',
+      'Indexes: firestore.indexes.json',
+      'Migration: Available in Settings',
     ],
   },
   {
@@ -38,27 +40,27 @@ const prepCards = [
   },
   {
     title: 'Migration Plan',
-    status: 'Planned',
+    status: 'Available',
     items: [
-      'Export localStorage backup first',
+      'Export Local Backup first',
       'Validate backup JSON',
-      'Map local sections to Firestore collections',
-      'Create user roles and assignments',
-      'Verify counts and permissions',
+      'Migrate Local Data to Cloud from Settings',
+      'Export Cloud Backup after migration',
+      'Verify dashboard on another signed-in device',
       'Keep rollback backup',
     ],
   },
   {
     title: 'Production Readiness',
-    status: 'Not Ready',
+    status: 'v1.0 Candidate',
     items: [
       'Authentication enabled',
-      'Firestore rules tested',
-      'Admin account created',
-      'Team roles assigned',
+      'Firestore rules ready for deploy',
+      'Admin email set with VITE_ADMIN_EMAIL',
+      'New users default to member',
       'Prayer/visitor data protected',
       'Mobile and print views checked',
-      'Next step: Firestore migration and security rules',
+      'Release Status: v1.0 Candidate',
     ],
   },
 ]
@@ -67,13 +69,13 @@ function DeployPrep() {
   return (
     <section className="section-page">
       <div className="section-intro">
-        <span className="eyebrow">Phase 13B</span>
+        <span className="eyebrow">Phase 14</span>
         <h2>Deploy Prep</h2>
-        <p>Track Firebase Hosting and Auth readiness while keeping dashboard data in browser localStorage.</p>
+        <p>Track Firebase Hosting, Auth, Firestore sync, security rules, migration, and v1.0 release readiness.</p>
       </div>
 
       <div className="warning-banner">
-        Auth is connected, but dashboard data remains stored in each browser until Firestore and security rules are connected.
+        Cloud sync is enabled. Deploy Firestore rules before storing private prayer, visitor, or team data.
       </div>
 
       <div className="deploy-prep-grid">

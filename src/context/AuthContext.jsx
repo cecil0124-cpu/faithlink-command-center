@@ -6,17 +6,35 @@ import {
   signUp,
   subscribeToAuthChanges,
 } from '../services/authService'
+import { createOrUpdateUserProfile } from '../services/firestoreService'
 import { AuthContext } from './authContextValue'
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
+  const [userProfile, setUserProfile] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [authError, setAuthError] = useState('')
 
   useEffect(() => {
-    const unsubscribe = subscribeToAuthChanges((user) => {
+    const unsubscribe = subscribeToAuthChanges(async (user) => {
       setCurrentUser(user)
-      setAuthLoading(false)
+
+      if (!user) {
+        setUserProfile(null)
+        setAuthLoading(false)
+        return
+      }
+
+      try {
+        const profile = await createOrUpdateUserProfile(user)
+        setUserProfile(profile)
+        setAuthError('')
+      } catch (error) {
+        setUserProfile(null)
+        setAuthError(error.message || 'Unable to load Firestore user profile.')
+      } finally {
+        setAuthLoading(false)
+      }
     })
 
     return unsubscribe
@@ -39,6 +57,8 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       currentUser,
+      userProfile,
+      realRole: userProfile?.role || null,
       authLoading,
       isAuthenticated: Boolean(currentUser),
       authError,
@@ -48,7 +68,7 @@ export function AuthProvider({ children }) {
       resetPassword: (email) => runAuthAction(() => sendPasswordReset(email)),
       clearAuthError: () => setAuthError(''),
     }),
-    [authError, authLoading, currentUser],
+    [authError, authLoading, currentUser, userProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

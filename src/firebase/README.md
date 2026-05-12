@@ -1,13 +1,18 @@
-# Firebase Preparation
+# Firebase Setup
 
-This folder is documentation and placeholder-only setup for a future Firebase phase.
+Firebase is active for Phase 14.
 
-Firebase is not installed, initialized, or connected yet. The live app still uses browser `localStorage` through `src/services/dataService.js`.
+Current setup:
 
-Future work:
+- Firebase Hosting serves the Vite build from `dist`.
+- Firebase Auth uses Email/Password sign-in.
+- Cloud Firestore stores signed-in user profiles and personal dashboards.
+- localStorage remains available for export/import backups.
 
-- Create a Firebase project.
-- Add `.env.local` with `VITE_` Firebase variables.
-- Initialize Firebase Auth.
-- Move dashboard data from localStorage to Firestore.
-- Add security rules before storing private prayer, visitor, or ministry data.
+Relevant files:
+
+- `src/firebase/firebaseClient.js`
+- `src/services/firestoreService.js`
+- `firestore.rules`
+- `firestore.indexes.json`
+- `docs/firestore-sync-setup.md`
