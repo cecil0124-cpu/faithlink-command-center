@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import ActivityLog from './components/ActivityLog'
+import DeployPrep from './components/DeployPrep'
 import Header from './components/Header'
 import ItemForm from './components/ItemForm'
 import OverviewCard from './components/OverviewCard'
@@ -281,6 +282,7 @@ function App() {
   const isWeeklyReview = activeSection === 'weeklyReview'
   const isRunSheet = activeSection === 'runSheet'
   const isTeamViewPrep = activeSection === 'teamViewPrep'
+  const isDeployPrep = activeSection === 'deployPrep'
   const sectionContent = isOverview || isTemplates ? sectionPages[activeSection] : sections[activeSection]
   const pageTitle = isSearchActive
     ? 'Search Results'
@@ -856,6 +858,8 @@ function App() {
           />
         ) : isTeamViewPrep ? (
           <TeamViewPrep />
+        ) : isDeployPrep ? (
+          <DeployPrep />
         ) : (
           <SectionPage
             actionPermissions={activeActionPermissions}

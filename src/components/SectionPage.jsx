@@ -176,7 +176,7 @@ function SectionPage({
         <>
           <section className="settings-summary content-panel">
             <div>
-              <span className="eyebrow">Phase 7</span>
+              <span className="eyebrow">Phase 10</span>
               <h2>Local Settings</h2>
             </div>
             <div className="settings-grid">
@@ -185,6 +185,11 @@ function SectionPage({
               <p><strong>Data mode:</strong> Browser {APP_CONFIG.dataMode}</p>
               <p><strong>Last updated:</strong> {lastUpdated}</p>
               <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
+              <p><strong>Firebase Project:</strong> {APP_CONFIG.firebaseConnected ? 'Connected' : 'Not Connected'}</p>
+              <p><strong>Hosting:</strong> {APP_CONFIG.hostingStatus}</p>
+              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Connected' : 'Not Connected'}</p>
+              <p><strong>Firestore:</strong> {APP_CONFIG.firestoreConnected ? 'Connected' : 'Not Connected'}</p>
+              <p><strong>Deployment Phase:</strong> {APP_CONFIG.deploymentPhase}</p>
               <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
               <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>
@@ -250,6 +255,21 @@ function SectionPage({
             ) : (
               <p className="role-note">Not available in this role preview.</p>
             )}
+          </section>
+
+          <section className="content-panel backup-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Deploy Prep</span>
+              <h2>Before Deployment</h2>
+            </div>
+            <ul className="settings-checklist">
+              <li>Export a fresh backup</li>
+              <li>Run lint</li>
+              <li>Run build</li>
+              <li>Review role permissions</li>
+              <li>Review Firebase rules plan</li>
+              <li>Confirm no private data is exposed</li>
+            </ul>
           </section>
 
           {rolePermissions.canImport ? (

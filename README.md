@@ -2,6 +2,30 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 10 Deployment Prep
+
+- Adds `.env.example` with placeholder Firebase variable names.
+- Keeps `.env.local` protected by `.gitignore`.
+- Adds admin-only `Deploy Prep` page for Firebase setup, environment variables, migration planning, and production readiness.
+- Adds deployment status fields to Settings and System Status.
+- Adds deployment preparation docs in `docs/`.
+- Keeps Firebase uninstalled, unconnected, and inactive.
+
+## Environment Setup Later
+
+When Firebase is ready, copy `.env.example` to `.env.local` and replace the placeholder values with Firebase web app config values. Do not commit `.env.local`.
+
+Vite requires browser-exposed environment variables to start with `VITE_`.
+
+## Documentation Folder
+
+- `docs/firebase-setup-checklist.md`: Firebase project setup checklist.
+- `docs/deployment-checklist.md`: pre-deploy and future Firebase Hosting checklist.
+- `docs/migration-plan.md`: localStorage to Firestore migration plan.
+- `docs/production-readiness.md`: readiness checklist before real team/private data.
+
+Current status: Firebase is not connected. Next phase: Firebase project setup and optional hosting.
+
 ## Phase 8 Restoration Setup Preset
 
 - Adds an opt-in Restoration Ministries starter setup.
