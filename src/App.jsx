@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import './App.css'
 import ActivityLog from './components/ActivityLog'
 import AppInstallPrep from './components/AppInstallPrep'
+import AuthScreen from './components/AuthScreen'
 import DeployPrep from './components/DeployPrep'
 import Header from './components/Header'
 import ItemForm from './components/ItemForm'
@@ -19,6 +20,7 @@ import TodayFocus from './components/TodayFocus'
 import WeeklyReview from './components/WeeklyReview'
 import { canAccessSection, defaultRoleId, getRoleConfig } from './config/rolesConfig'
 import { APP_CONFIG } from './config/appConfig'
+import { useAuth } from './context/useAuth'
 import {
   editableSectionIds,
   focusCard,
@@ -262,6 +264,7 @@ function createTaskFromTemplate(task, template, timestamp) {
 }
 
 function App() {
+  const { authLoading, isAuthenticated } = useAuth()
   const [activeSection, setActiveSection] = useState('overview')
   const [appData, setAppData] = useState(() => getDashboardData())
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
@@ -332,6 +335,23 @@ function App() {
       totalSections: Object.keys(sections).length,
     }
   }, [appData, sections])
+
+  if (APP_CONFIG.authRequired && authLoading) {
+    return (
+      <main className="auth-shell">
+        <section className="auth-card">
+          <div className="brand-mark auth-mark" aria-hidden="true">FL</div>
+          <span className="eyebrow">Loading</span>
+          <h1>FaithLink Command Center</h1>
+          <p>Checking Firebase Authentication...</p>
+        </section>
+      </main>
+    )
+  }
+
+  if (APP_CONFIG.authRequired && !isAuthenticated) {
+    return <AuthScreen />
+  }
 
   function persistData(nextData, nextMessage, activity) {
     const timestamp = getTimestamp()

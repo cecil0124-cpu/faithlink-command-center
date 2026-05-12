@@ -16,19 +16,18 @@ const prepCards = [
       'Build Output: dist',
       'Data Mode: localStorage',
       'Firestore: Not Connected',
-      'Auth: Not Required Yet',
+      'Auth: Connected',
       'Deploy Command: firebase deploy --only hosting',
     ],
   },
   {
     title: 'Firebase Setup',
-    status: 'Not Started',
+    status: 'Auth Connected',
     items: [
-      'Create Firebase project',
-      'Stay on Spark/free plan if possible',
-      'Register web app',
-      'Copy config into .env.local later',
-      'Enable Auth and Firestore later',
+      'Firebase app config loaded from .env.local',
+      'Email/Password Auth connected',
+      'Firestore is still not connected',
+      'Data sync is still not connected',
       'Review security rules before private data',
     ],
   },
@@ -59,6 +58,7 @@ const prepCards = [
       'Team roles assigned',
       'Prayer/visitor data protected',
       'Mobile and print views checked',
+      'Next step: Firestore migration and security rules',
     ],
   },
 ]
@@ -67,13 +67,13 @@ function DeployPrep() {
   return (
     <section className="section-page">
       <div className="section-intro">
-        <span className="eyebrow">Phase 13A</span>
+        <span className="eyebrow">Phase 13B</span>
         <h2>Deploy Prep</h2>
-        <p>Prepare Firebase Hosting deployment while keeping dashboard data in browser localStorage.</p>
+        <p>Track Firebase Hosting and Auth readiness while keeping dashboard data in browser localStorage.</p>
       </div>
 
       <div className="warning-banner">
-        This deploy publishes the app shell only. Dashboard data remains stored in each browser until Firestore is connected.
+        Auth is connected, but dashboard data remains stored in each browser until Firestore and security rules are connected.
       </div>
 
       <div className="deploy-prep-grid">

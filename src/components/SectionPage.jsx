@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { APP_CONFIG } from '../config/appConfig'
+import { useAuth } from '../context/useAuth'
 import { getTemplatesForSection } from '../data/workflowTemplates'
 import ItemForm from './ItemForm'
 import LoginPlaceholder from './LoginPlaceholder'
@@ -34,6 +35,7 @@ function SectionPage({
   section,
   sectionId,
 }) {
+  const { currentUser, logout, resetPassword } = useAuth()
   const [editingItem, setEditingItem] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
@@ -134,6 +136,24 @@ function SectionPage({
     setIsPresetConfirming(false)
   }
 
+  async function handlePasswordReset() {
+    if (currentUser?.email) {
+      try {
+        await resetPassword(currentUser.email)
+      } catch {
+        // AuthContext surfaces the error in auth-aware screens.
+      }
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await logout()
+    } catch {
+      // AuthContext keeps the user-facing auth error state.
+    }
+  }
+
   return (
     <section className={`section-page ${sectionId === 'sunday' ? 'printable-page' : ''}`}>
       <div className="section-toolbar">
@@ -176,7 +196,7 @@ function SectionPage({
         <>
           <section className="settings-summary content-panel">
             <div>
-              <span className="eyebrow">Phase 10</span>
+              <span className="eyebrow">Phase 13B</span>
               <h2>Local Settings</h2>
             </div>
             <div className="settings-grid">
@@ -187,10 +207,11 @@ function SectionPage({
               <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
               <p><strong>Firebase Project:</strong> {APP_CONFIG.firebaseConnected ? 'Connected' : 'Not Connected'}</p>
               <p><strong>Hosting:</strong> {APP_CONFIG.hostingStatus}</p>
-              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Connected' : 'Not Required'}</p>
+              <p><strong>Auth:</strong> {APP_CONFIG.authConnected ? 'Email/Password Enabled' : 'Not Connected'}</p>
               <p><strong>Firestore:</strong> {APP_CONFIG.firestoreConnected ? 'Connected' : 'Not Connected'}</p>
-              <p><strong>Deployment Phase:</strong> 13A Hosting Only</p>
-              <p><strong>Sync:</strong> {APP_CONFIG.dataSyncStatus}</p>
+              <p><strong>Deployment Phase:</strong> 13B Auth / Local Data</p>
+              <p><strong>Sync:</strong> {APP_CONFIG.syncStatus}</p>
+              <p><strong>Signed-in user:</strong> {currentUser?.email || 'Not signed in'}</p>
               <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
               <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>
@@ -251,6 +272,7 @@ function SectionPage({
             </div>
             <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly and before major workflow changes.</p>
             <p className="backup-reminder">Until Firebase sync is connected, data is saved only in this browser on this device. Export backups before switching devices or clearing browser data.</p>
+            <p className="backup-reminder">Signing in does not sync dashboard data yet. Data remains saved only in this browser.</p>
             <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
             {rolePermissions.canExport ? (
               <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
@@ -318,16 +340,38 @@ function SectionPage({
 
           <section className="content-panel data-health-panel">
             <div className="panel-heading">
+              <span className="eyebrow">Firebase Auth</span>
+              <h2>Account</h2>
+            </div>
+            <div className="settings-grid">
+              <p><strong>Signed-in email:</strong> {currentUser?.email || 'Not signed in'}</p>
+              <p><strong>User UID:</strong> {currentUser?.uid || 'Not available'}</p>
+              <p><strong>Data sync:</strong> {APP_CONFIG.syncStatus}</p>
+            </div>
+            <div className="settings-actions">
+              <button className="secondary-button" onClick={handlePasswordReset} type="button">
+                Send Password Reset
+              </button>
+              <button className="danger-button" onClick={handleLogout} type="button">
+                Sign Out
+              </button>
+            </div>
+            <p className="backup-reminder">Signing in does not sync dashboard data yet. Data remains saved only in this browser.</p>
+          </section>
+
+          <section className="content-panel data-health-panel">
+            <div className="panel-heading">
               <span className="eyebrow">Local Roles</span>
               <h2>Role Preview</h2>
             </div>
             <div className="settings-grid">
               <p><strong>Current role:</strong> {roleConfig.label}</p>
+              <p><strong>Current Firebase user:</strong> {currentUser?.email || 'Not signed in'}</p>
               <p><strong>Description:</strong> {roleConfig.description}</p>
               <p><strong>Allowed sections:</strong> {roleConfig.allowedSections.join(', ')}</p>
               <p><strong>Enabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => enabled).map(([key]) => key).join(', ') || 'None'}</p>
               <p><strong>Disabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => !enabled).map(([key]) => key).join(', ') || 'None'}</p>
-              <p><strong>Security note:</strong> This is a local preview. Firebase Authentication and Firestore security rules will enforce permissions later.</p>
+              <p><strong>Security note:</strong> Role preview is local only. Firestore security rules will enforce real role permissions in the next cloud data phase.</p>
             </div>
           </section>
 
