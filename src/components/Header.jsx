@@ -4,6 +4,7 @@ function Header({
   lastUpdated,
   onClearSearch,
   onSearchChange,
+  roleSwitcher,
   searchTerm,
   tagline,
   title,
@@ -19,6 +20,8 @@ function Header({
       </div>
 
       <div className="header-actions">
+        {roleSwitcher}
+
         <label className="global-search">
           <span>Search</span>
           <div>

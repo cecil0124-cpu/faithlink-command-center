@@ -5,6 +5,7 @@ import { formatDueDate, isOverdue } from '../utils/itemUtils'
 
 function TaskList({
   canEdit,
+  canDelete,
   items,
   onCompleteItem,
   onDeleteItem,
@@ -135,6 +136,8 @@ function TaskList({
 
             {canEdit && (
               <ItemActions
+                canDelete={canDelete}
+                canEdit={canEdit}
                 isComplete={item.status === 'Completed'}
                 isPinned={item.pinned}
                 onComplete={() => onCompleteItem(item.id)}

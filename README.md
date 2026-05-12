@@ -18,6 +18,20 @@ Loading this preset replaces the current browser localStorage dashboard. Export 
 
 The preset is local-only. Firebase, authentication, and Firestore are still not connected.
 
+## Phase 9 Local Role Preview
+
+- Adds local-only role views for `admin`, `pastor_view`, `pastor_contributor`, `prayer_team`, `hospitality_team`, `media_team`, `music_team`, and `member`.
+- Adds a Role Preview switcher in the header.
+- Saves the selected preview role in browser localStorage.
+- Filters sidebar sections by role.
+- Filters My World Overview panels for prayer, hospitality, media, music, pastor, and member views.
+- Hides or disables local actions by role, including create, edit, delete, archive, export, import, reset, preset loading, and print.
+- Adds a Settings Role Preview panel showing current role, allowed sections, enabled actions, and disabled actions.
+- Adds admin-only Team View Prep cards for future Firebase onboarding and permission planning.
+- Logs role changes in Recent Activity.
+
+Role preview is not security. It only changes the local interface. Firebase Auth and Security Rules are required before using this with real team members.
+
 ## Phase 7 Features
 
 - Due dates on local dashboard items.

@@ -34,7 +34,7 @@ function ReviewList({ emptyText, items, title }) {
   )
 }
 
-function WeeklyReview({ activityLog, sections }) {
+function WeeklyReview({ activityLog, canPrint, sections }) {
   const weekBounds = getWeekBounds()
   const allItems = Object.entries(sections).flatMap(([sectionId, section]) =>
     (section.items || []).map((item) => ({ ...item, sectionId, sectionTitle: section.title })),
@@ -56,9 +56,11 @@ function WeeklyReview({ activityLog, sections }) {
           <h2>Weekly Review</h2>
           <p>Review what finished, what is still open, what is overdue, and what needs attention before the next service week.</p>
         </div>
-        <button className="secondary-button print-button" onClick={() => window.print()} type="button">
-          Print Weekly Review
-        </button>
+        {canPrint && (
+          <button className="secondary-button print-button" onClick={() => window.print()} type="button">
+            Print Weekly Review
+          </button>
+        )}
       </div>
 
       <div className="review-grid">

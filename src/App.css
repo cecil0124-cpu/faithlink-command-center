@@ -746,7 +746,8 @@
   font-weight: 900;
 }
 
-.global-search > span {
+.global-search > span,
+.role-switcher > span {
   color: var(--color-burgundy);
   font-size: 0.88rem;
   letter-spacing: 0.04em;
@@ -759,6 +760,7 @@
 }
 
 .global-search input,
+.role-switcher select,
 .focus-input-row input {
   min-width: 0;
   width: 100%;
@@ -768,6 +770,27 @@
   color: var(--color-black);
   font: inherit;
   padding: 11px 12px;
+}
+
+.role-switcher {
+  display: grid;
+  gap: 7px;
+  color: var(--color-black);
+  font-weight: 900;
+}
+
+.role-switcher small,
+.role-note {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.role-note {
+  border-left: 4px solid var(--color-gold);
+  border-radius: 12px;
+  background: #fffaf0;
+  padding: 10px 12px;
 }
 
 .global-search button,
@@ -904,6 +927,27 @@
 .identity-card strong {
   color: var(--color-burgundy);
   font-size: 1rem;
+}
+
+.member-welcome {
+  display: grid;
+  gap: 14px;
+}
+
+.team-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.team-role-card {
+  display: grid;
+  gap: 10px;
+}
+
+.team-role-card p {
+  color: var(--color-text);
+  font-weight: 800;
 }
 
 .review-grid {
@@ -1126,6 +1170,7 @@ textarea {
   }
 
   .review-grid,
+  .team-role-grid,
   .review-row {
     grid-template-columns: 1fr;
   }

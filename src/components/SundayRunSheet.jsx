@@ -1,4 +1,4 @@
-function SundayRunSheet({ onAddItem, onDeleteItem, onUpdateItem, runSheet }) {
+function SundayRunSheet({ canEdit, canPrint, onAddItem, onDeleteItem, onUpdateItem, runSheet }) {
   return (
     <section className="section-page printable-page run-sheet-page">
       <div className="section-toolbar">
@@ -7,9 +7,11 @@ function SundayRunSheet({ onAddItem, onDeleteItem, onUpdateItem, runSheet }) {
           <h2>Sunday Run Sheet</h2>
           <p>Build a simple local service order for the team, then print it for Sunday morning.</p>
         </div>
-        <button className="secondary-button print-button" onClick={() => window.print()} type="button">
-          Print Run Sheet
-        </button>
+        {canPrint && (
+          <button className="secondary-button print-button" onClick={() => window.print()} type="button">
+            Print Run Sheet
+          </button>
+        )}
       </div>
 
       <div className="run-sheet-list">
@@ -25,19 +27,26 @@ function SundayRunSheet({ onAddItem, onDeleteItem, onUpdateItem, runSheet }) {
                   <span>{index + 1}</span>
                   <input
                     aria-label={`${section.title} item ${index + 1}`}
+                    disabled={!canEdit}
                     onChange={(event) => onUpdateItem(section.id, item.id, event.target.value)}
                     type="text"
                     value={item.text}
                   />
-                  <button className="danger-button" onClick={() => onDeleteItem(section.id, item.id)} type="button">
-                    Delete
-                  </button>
+                  {canEdit && (
+                    <button className="danger-button" onClick={() => onDeleteItem(section.id, item.id)} type="button">
+                      Delete
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
-            <button className="secondary-button" onClick={() => onAddItem(section.id)} type="button">
-              Add Line
-            </button>
+            {canEdit ? (
+              <button className="secondary-button" onClick={() => onAddItem(section.id)} type="button">
+                Add Line
+              </button>
+            ) : (
+              <p className="role-note">Not available in this role preview.</p>
+            )}
           </section>
         ))}
       </div>

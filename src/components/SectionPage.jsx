@@ -10,6 +10,7 @@ import { isDueSoon, isOverdue } from '../utils/itemUtils'
 const filterOrder = ['All', 'New', 'Open', 'In Progress', 'Urgent', 'Completed', 'Draft', 'Overdue', 'Due Soon', 'High Priority', 'Critical']
 
 function SectionPage({
+  actionPermissions,
   canEdit,
   dataHealth,
   importState,
@@ -29,6 +30,7 @@ function SectionPage({
   onTogglePin,
   onUpdateItem,
   onUseTemplate,
+  roleConfig,
   section,
   sectionId,
 }) {
@@ -41,6 +43,8 @@ function SectionPage({
   const [showArchived, setShowArchived] = useState(false)
   const importInputRef = useRef(null)
   const sectionTemplates = getTemplatesForSection(sectionId)
+  const permissions = actionPermissions || roleConfig.permissions
+  const rolePermissions = roleConfig.permissions
 
   const availableFilters = useMemo(() => {
     const visibleItems = section.items.filter((item) => showArchived || !item.archived)
@@ -139,25 +143,32 @@ function SectionPage({
           <p>{section.description}</p>
         </div>
 
-        {canEdit && (
+        {(permissions.canCreate || permissions.canArchive || permissions.canPrint) && (
           <div className="section-actions">
-            <button aria-label={`Add item to ${section.title}`} className="primary-button" onClick={handleAddClick} type="button">
-              Add Item
-            </button>
-            {sectionTemplates.length > 0 && (
+            {permissions.canCreate && canEdit && (
+              <button aria-label={`Add item to ${section.title}`} className="primary-button" onClick={handleAddClick} type="button">
+                Add Item
+              </button>
+            )}
+            {permissions.canCreate && canEdit && sectionTemplates.length > 0 && (
               <button className="secondary-button" onClick={() => setIsTemplatePickerOpen(true)} type="button">
                 Create From Template
               </button>
             )}
-            {sectionId === 'sunday' && (
+            {permissions.canPrint && sectionId === 'sunday' && (
               <button className="secondary-button print-button" onClick={() => window.print()} type="button">
                 Print Checklist
               </button>
             )}
-            <button className="secondary-button" disabled={completedCount === 0} onClick={onArchiveCompleted} type="button">
-              Archive Completed
-            </button>
+            {permissions.canArchive && (
+              <button className="secondary-button" disabled={completedCount === 0} onClick={onArchiveCompleted} type="button">
+                Archive Completed
+              </button>
+            )}
           </div>
+        )}
+        {canEdit && !permissions.canCreate && !permissions.canEdit && (
+          <p className="role-note">Not available in this role preview.</p>
         )}
       </div>
 
@@ -178,13 +189,21 @@ function SectionPage({
               <p><strong>Total archived items:</strong> {dataHealth.archivedItems}</p>
             </div>
             <div className="settings-actions">
-              <button className="secondary-button" onClick={onExportData} type="button">
-                Export Backup Now
-              </button>
-              {!isResetConfirming ? (
-                <button className="danger-button reset-button" onClick={() => setIsResetConfirming(true)} type="button">
-                  Reset sample data
+              {rolePermissions.canExport ? (
+                <button className="secondary-button" onClick={onExportData} type="button">
+                  Export Backup Now
                 </button>
+              ) : (
+                <p className="role-note">Export: Not available in this role preview.</p>
+              )}
+              {!isResetConfirming ? (
+                rolePermissions.canResetData ? (
+                  <button className="danger-button reset-button" onClick={() => setIsResetConfirming(true)} type="button">
+                    Reset sample data
+                  </button>
+                ) : (
+                  <p className="role-note">Reset: Not available in this role preview.</p>
+                )
               ) : (
                 <div className="confirm-box">
                   <p>Resetting will remove your current local data and restore sample data.</p>
@@ -202,7 +221,9 @@ function SectionPage({
             </div>
             <p className="backup-reminder">Load a Restoration Ministries starter setup with service times, media workflows, A/V checklists, website/app tasks, music planning, and AI prompt categories.</p>
             <p><strong>Warning:</strong> Loading this preset will replace your current local dashboard data. Export a backup first if needed.</p>
-            {!isPresetConfirming ? (
+            {!rolePermissions.canLoadPreset ? (
+              <p className="role-note">Load preset: Not available in this role preview.</p>
+            ) : !isPresetConfirming ? (
               <button className="primary-button" onClick={() => setIsPresetConfirming(true)} type="button">
                 Load Restoration Setup
               </button>
@@ -224,10 +245,15 @@ function SectionPage({
             </div>
             <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly and before major workflow changes.</p>
             <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
-            <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
+            {rolePermissions.canExport ? (
+              <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
+            ) : (
+              <p className="role-note">Not available in this role preview.</p>
+            )}
           </section>
 
-          <section className="content-panel import-panel">
+          {rolePermissions.canImport ? (
+            <section className="content-panel import-panel">
             <div className="panel-heading">
               <span className="eyebrow">Restore</span>
               <h2>Import Data</h2>
@@ -257,6 +283,30 @@ function SectionPage({
                 </div>
               </div>
             )}
+            </section>
+          ) : (
+            <section className="content-panel import-panel">
+              <div className="panel-heading">
+                <span className="eyebrow">Restore</span>
+                <h2>Import Data</h2>
+              </div>
+              <p className="role-note">Not available in this role preview.</p>
+            </section>
+          )}
+
+          <section className="content-panel data-health-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Local Roles</span>
+              <h2>Role Preview</h2>
+            </div>
+            <div className="settings-grid">
+              <p><strong>Current role:</strong> {roleConfig.label}</p>
+              <p><strong>Description:</strong> {roleConfig.description}</p>
+              <p><strong>Allowed sections:</strong> {roleConfig.allowedSections.join(', ')}</p>
+              <p><strong>Enabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => enabled).map(([key]) => key).join(', ') || 'None'}</p>
+              <p><strong>Disabled actions:</strong> {Object.entries(rolePermissions).filter(([, enabled]) => !enabled).map(([key]) => key).join(', ') || 'None'}</p>
+              <p><strong>Security note:</strong> This is a local preview. Firebase Authentication and Firestore security rules will enforce permissions later.</p>
+            </div>
           </section>
 
           <section className="content-panel data-health-panel">
@@ -306,7 +356,8 @@ function SectionPage({
       </div>
 
       <TaskList
-        canEdit={canEdit}
+        canDelete={permissions.canDelete}
+        canEdit={canEdit && permissions.canEdit}
         items={filteredItems}
         onCompleteItem={onCompleteItem}
         onDeleteItem={onDeleteItem}

@@ -58,3 +58,19 @@ Firebase is not connected yet. This is a planning document for future Firestore 
 - Protect prayer requests and visitor records with strict role checks.
 - Deny by default and explicitly allow only needed reads/writes.
 - Add server timestamps for createdAt and updatedAt when Firestore is connected.
+
+## Phase 9 Local Role Preview Notes
+
+The current role switcher is not security. It only changes the local React interface and stores the selected preview role in browser localStorage. Anyone with browser/devtools access could bypass it.
+
+Future Firebase enforcement should include:
+
+- Firebase Authentication for real user identity.
+- A user profile document with roleIds, active team assignments, displayName, email, and disabled/active state.
+- Firestore Security Rules that check the authenticated user role before reads or writes.
+- Section-level checks for sunday, media, prayer, visitors, music, websites, prompts, sops, run sheets, settings, and activity logs.
+- Assignment fields such as assignedTo, teamId, createdBy, updatedBy, visibility, and privateNotes for scoped team access.
+- Submit-only member rules for future prayer requests and connect cards.
+- Admin-only rules for settings, role changes, imports, resets, presets, and user management.
+
+Local role preview helps design the interface, but Firebase Auth and Firestore Security Rules must enforce permissions before real team members use shared data.

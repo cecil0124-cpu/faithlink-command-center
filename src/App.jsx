@@ -5,14 +5,17 @@ import Header from './components/Header'
 import ItemForm from './components/ItemForm'
 import OverviewCard from './components/OverviewCard'
 import QuickCreate from './components/QuickCreate'
+import RoleSwitcher from './components/RoleSwitcher'
 import SearchResults from './components/SearchResults'
 import SectionPage from './components/SectionPage'
 import Sidebar from './components/Sidebar'
 import SundayRunSheet from './components/SundayRunSheet'
 import SystemStatus from './components/SystemStatus'
+import TeamViewPrep from './components/TeamViewPrep'
 import TemplatesPage from './components/TemplatesPage'
 import TodayFocus from './components/TodayFocus'
 import WeeklyReview from './components/WeeklyReview'
+import { canAccessSection, defaultRoleId, getRoleConfig } from './config/rolesConfig'
 import {
   editableSectionIds,
   focusCard,
@@ -38,6 +41,8 @@ import {
 } from './services/dataService'
 import { isHighAttentionPriority, isOverdue } from './utils/itemUtils'
 
+const ROLE_STORAGE_KEY = 'faithlink-command-center-role'
+
 const quickCreateMap = {
   'Prayer Request': 'prayer',
   'Media Task': 'media',
@@ -48,6 +53,25 @@ const quickCreateMap = {
 }
 
 const searchableSectionIds = editableSectionIds
+const roleOverviewSections = {
+  admin: editableSectionIds,
+  pastor_view: ['sunday', 'media', 'prayer', 'visitors', 'websites'],
+  pastor_contributor: ['sunday', 'media', 'prayer', 'visitors', 'websites', 'prompts'],
+  prayer_team: ['prayer'],
+  hospitality_team: ['visitors'],
+  media_team: ['sunday', 'media', 'sops'],
+  music_team: ['music', 'prompts'],
+  member: [],
+}
+
+const roleWritableSections = {
+  admin: editableSectionIds,
+  pastor_contributor: ['media', 'websites', 'prompts', 'runSheet'],
+  prayer_team: ['prayer'],
+  hospitality_team: ['visitors'],
+  media_team: ['sunday', 'media', 'sops', 'runSheet'],
+  music_team: ['music', 'prompts'],
+}
 
 function getTimestamp() {
   return new Date().toLocaleString()
@@ -59,6 +83,20 @@ function getItems(sections, sectionId) {
 
 function getActiveItems(sections, sectionId) {
   return getItems(sections, sectionId).filter((item) => !item.archived)
+}
+
+function getStoredRoleId() {
+  if (typeof window === 'undefined') {
+    return defaultRoleId
+  }
+
+  return window.localStorage.getItem(ROLE_STORAGE_KEY) || defaultRoleId
+}
+
+function saveStoredRoleId(roleId) {
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(ROLE_STORAGE_KEY, roleId)
+  }
 }
 
 function countByStatus(items, statuses) {
@@ -76,19 +114,19 @@ function getDynamicOverviewCards(sections) {
   const sopDrafts = countByStatus(getActiveItems(sections, 'sops'), ['Draft', 'In Progress'])
 
   return [
-    { category: 'Sunday Service', title: `${sundayOpen} Open`, status: 'Incomplete Sunday service tasks.' },
-    { category: 'Media Tasks', title: `${mediaActive} Active`, status: 'Open or in-progress production work.' },
-    { category: 'Prayer Requests', title: `${prayerNeeds} Needs Care`, status: 'New or urgent prayer requests.' },
-    { category: 'Visitors', title: `${visitorFollowUps} Follow-ups`, status: 'Guests still needing connection.' },
-    { category: 'Music Projects', title: `${musicActive} Active`, status: 'Songs and ideas still moving.' },
-    { category: 'Website/App', title: `${websiteUpdates} Updates`, status: 'Incomplete digital project tasks.' },
-    { category: 'AI Prompts', title: `${promptDrafts} Working`, status: 'Draft, open, or in-progress prompts.' },
-    { category: 'Tech SOPs', title: `${sopDrafts} Drafting`, status: 'Draft or in-progress procedures.' },
-  ]
+    { sectionId: 'sunday', category: 'Sunday Service', title: `${sundayOpen} Open`, status: 'Incomplete Sunday service tasks.' },
+    { sectionId: 'media', category: 'Media Tasks', title: `${mediaActive} Active`, status: 'Open or in-progress production work.' },
+    { sectionId: 'prayer', category: 'Prayer Requests', title: `${prayerNeeds} Needs Care`, status: 'New or urgent prayer requests.' },
+    { sectionId: 'visitors', category: 'Visitors', title: `${visitorFollowUps} Follow-ups`, status: 'Guests still needing connection.' },
+    { sectionId: 'music', category: 'Music Projects', title: `${musicActive} Active`, status: 'Songs and ideas still moving.' },
+    { sectionId: 'websites', category: 'Website/App', title: `${websiteUpdates} Updates`, status: 'Incomplete digital project tasks.' },
+    { sectionId: 'prompts', category: 'AI Prompts', title: `${promptDrafts} Working`, status: 'Draft, open, or in-progress prompts.' },
+    { sectionId: 'sops', category: 'Tech SOPs', title: `${sopDrafts} Drafting`, status: 'Draft or in-progress procedures.' },
+  ].filter((card) => sections[card.sectionId])
 }
 
 function collectPinnedItems(sections) {
-  return searchableSectionIds.flatMap((sectionId) =>
+  return searchableSectionIds.filter((sectionId) => sections[sectionId]).flatMap((sectionId) =>
     getItems(sections, sectionId)
       .filter((item) => item.pinned && !item.archived)
       .map((item) => ({ ...item, sectionId, sectionTitle: sections[sectionId].title })),
@@ -105,17 +143,40 @@ function getNeedsAttention(sections) {
     })
   }
 
-  searchableSectionIds.forEach((sectionId) => {
+  searchableSectionIds.filter((sectionId) => sections[sectionId]).forEach((sectionId) => {
     pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => item.status === 'Urgent'))
     pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => isHighAttentionPriority(item)))
     pushItems(sectionId, getActiveItems(sections, sectionId).filter((item) => isOverdue(item)))
   })
-  pushItems('prayer', getActiveItems(sections, 'prayer').filter((item) => item.status === 'New'))
-  pushItems('visitors', getActiveItems(sections, 'visitors').filter((item) => item.status === 'Open'))
-  pushItems('media', getActiveItems(sections, 'media').filter((item) => item.status === 'Open'))
-  pushItems('sunday', getActiveItems(sections, 'sunday').filter((item) => item.status !== 'Completed'))
+  if (sections.prayer) pushItems('prayer', getActiveItems(sections, 'prayer').filter((item) => item.status === 'New'))
+  if (sections.visitors) pushItems('visitors', getActiveItems(sections, 'visitors').filter((item) => item.status === 'Open'))
+  if (sections.media) pushItems('media', getActiveItems(sections, 'media').filter((item) => item.status === 'Open'))
+  if (sections.sunday) pushItems('sunday', getActiveItems(sections, 'sunday').filter((item) => item.status !== 'Completed'))
 
   return results.slice(0, 6)
+}
+
+function filterSectionsForRole(sectionIds, roleId) {
+  const allowedOverviewSections = roleOverviewSections[roleId] || editableSectionIds
+  return sectionIds.filter((sectionId) => allowedOverviewSections.includes(sectionId))
+}
+
+function getRoleActionPermissions(roleId, sectionId) {
+  const roleConfig = getRoleConfig(roleId)
+  const writableSections = roleWritableSections[roleId] || []
+  const canWriteSection = writableSections.includes(sectionId)
+
+  if (roleId === 'admin') {
+    return roleConfig.permissions
+  }
+
+  return {
+    ...roleConfig.permissions,
+    canCreate: roleConfig.permissions.canCreate && canWriteSection,
+    canEdit: roleConfig.permissions.canEdit && canWriteSection,
+    canDelete: false,
+    canArchive: roleConfig.permissions.canArchive && canWriteSection,
+  }
 }
 
 function itemMatchesSearch(item, term) {
@@ -150,6 +211,7 @@ function getSearchResults(sections, searchTerm) {
   }
 
   return searchableSectionIds
+    .filter((sectionId) => sections[sectionId])
     .map((sectionId) => ({
       sectionId,
       sectionTitle: sections[sectionId].title,
@@ -200,11 +262,14 @@ function App() {
   const [activeSection, setActiveSection] = useState('overview')
   const [appData, setAppData] = useState(() => getDashboardData())
   const [message, setMessage] = useState('')
+  const [selectedRoleId, setSelectedRoleId] = useState(() => getStoredRoleId())
   const [searchTerm, setSearchTerm] = useState('')
   const [quickCreateSection, setQuickCreateSection] = useState(null)
   const [importState, setImportState] = useState({ error: '', fileData: null, preview: null })
 
   const sections = appData.sections
+  const roleConfig = getRoleConfig(selectedRoleId)
+  const visibleNavigationItems = navigationItems.filter((item) => canAccessSection(selectedRoleId, item.id))
   const currentSection = useMemo(
     () => navigationItems.find((item) => item.id === activeSection),
     [activeSection],
@@ -215,6 +280,7 @@ function App() {
   const isTemplates = activeSection === 'templates'
   const isWeeklyReview = activeSection === 'weeklyReview'
   const isRunSheet = activeSection === 'runSheet'
+  const isTeamViewPrep = activeSection === 'teamViewPrep'
   const sectionContent = isOverview || isTemplates ? sectionPages[activeSection] : sections[activeSection]
   const pageTitle = isSearchActive
     ? 'Search Results'
@@ -226,9 +292,27 @@ function App() {
   const overviewCards = useMemo(() => getDynamicOverviewCards(sections), [sections])
   const pinnedItems = useMemo(() => collectPinnedItems(sections), [sections])
   const needsAttentionItems = useMemo(() => getNeedsAttention(sections), [sections])
-  const searchResults = useMemo(() => getSearchResults(sections, searchTerm), [sections, searchTerm])
   const recommendedTemplateItems = recommendedTemplates.map(getTemplateByName).filter(Boolean)
   const dashboardUpcomingItems = appData.upcomingItems || upcomingItems
+  const roleSectionIds = filterSectionsForRole(searchableSectionIds, selectedRoleId)
+  const roleScopedSections = useMemo(
+    () =>
+      Object.fromEntries(
+        roleSectionIds.map((sectionId) => [
+          sectionId,
+          sections[sectionId],
+        ]),
+      ),
+    [roleSectionIds, sections],
+  )
+  const roleOverviewCards = useMemo(() => getDynamicOverviewCards(roleScopedSections), [roleScopedSections])
+  const rolePinnedItems = useMemo(() => collectPinnedItems(roleScopedSections), [roleScopedSections])
+  const roleNeedsAttentionItems = useMemo(() => getNeedsAttention(roleScopedSections), [roleScopedSections])
+  const searchResults = useMemo(
+    () => getSearchResults(selectedRoleId === 'admin' ? sections : roleScopedSections, searchTerm),
+    [roleScopedSections, searchTerm, sections, selectedRoleId],
+  )
+  const activeActionPermissions = getRoleActionPermissions(selectedRoleId, activeSection)
   const dataHealth = useMemo(() => {
     const allItems = Object.values(sections).flatMap((section) => section.items || [])
     return {
@@ -449,6 +533,21 @@ function App() {
     setMessage('Restoration setup loaded')
   }
 
+  function handleRoleChange(roleId) {
+    const nextRole = getRoleConfig(roleId)
+    saveStoredRoleId(roleId)
+    setSelectedRoleId(roleId)
+    if (!nextRole.allowedSections.includes(activeSection)) {
+      setActiveSection('overview')
+      setSearchTerm('')
+    }
+    persistData(
+      appData,
+      `Role changed to ${nextRole.label}`,
+      { action: 'Role changed', section: 'Settings', itemTitle: nextRole.label },
+    )
+  }
+
   function handleFocusChange(focusItems) {
     persistData(
       { ...appData, focusItems },
@@ -571,8 +670,11 @@ function App() {
     <div className="app-shell">
       <Sidebar
         activeSection={activeSection}
-        items={navigationItems}
+        items={visibleNavigationItems}
         onSelect={(sectionId) => {
+          if (!canAccessSection(selectedRoleId, sectionId)) {
+            return
+          }
           setActiveSection(sectionId)
           setSearchTerm('')
         }}
@@ -591,6 +693,7 @@ function App() {
           lastUpdated={appData.lastUpdated}
           onClearSearch={() => setSearchTerm('')}
           onSearchChange={setSearchTerm}
+          roleSwitcher={<RoleSwitcher currentRoleId={selectedRoleId} onRoleChange={handleRoleChange} />}
           searchTerm={searchTerm}
           tagline={
             isSearchActive
@@ -610,15 +713,34 @@ function App() {
 
         {isSearchActive ? (
           <SearchResults groups={searchResults} onResultClick={handleResultClick} />
+        ) : isOverview && selectedRoleId === 'member' ? (
+          <section className="dashboard-grid command-home" aria-label="Member Home">
+            <section className="content-panel member-welcome">
+              <div className="panel-heading">
+                <span className="eyebrow">Member Preview</span>
+                <h2>Welcome to FaithLink Command Center</h2>
+              </div>
+              <p>Member submission tools will be connected in a later phase.</p>
+              <div className="settings-actions">
+                <button className="secondary-button" onClick={() => setMessage('Coming in a later phase.')} type="button">
+                  Submit Prayer Request
+                </button>
+                <button className="secondary-button" onClick={() => setMessage('Coming in a later phase.')} type="button">
+                  Submit Connect Card
+                </button>
+              </div>
+            </section>
+          </section>
         ) : isOverview ? (
           <section className="dashboard-grid command-home" aria-label="Command Center Home">
             <div className="overview-cards">
-              {overviewCards.map((card) => (
+              {(selectedRoleId === 'admin' ? overviewCards : roleOverviewCards).map((card) => (
                 <OverviewCard key={card.category} card={card} />
               ))}
             </div>
 
-            <section className="content-panel recommended-panel">
+            {selectedRoleId === 'admin' && (
+              <section className="content-panel recommended-panel">
               <div className="panel-heading">
                 <span className="eyebrow">Workflow Starters</span>
                 <h2>Recommended Templates</h2>
@@ -637,6 +759,7 @@ function App() {
                 ))}
               </div>
             </section>
+            )}
 
             <div className="home-panel-grid">
               <section className="content-panel identity-card">
@@ -655,8 +778,8 @@ function App() {
                   <h2>Needs Attention</h2>
                 </div>
                 <div className="attention-list">
-                  {needsAttentionItems.length > 0 ? (
-                    needsAttentionItems.map((item) => (
+                  {(selectedRoleId === 'admin' ? needsAttentionItems : roleNeedsAttentionItems).length > 0 ? (
+                    (selectedRoleId === 'admin' ? needsAttentionItems : roleNeedsAttentionItems).map((item) => (
                       <button
                         className="attention-row clickable-row"
                         key={`${item.sectionId}-${item.id}`}
@@ -678,8 +801,8 @@ function App() {
                   <h2>Pinned Items</h2>
                 </div>
                 <div className="attention-list">
-                  {pinnedItems.length > 0 ? (
-                    pinnedItems.map((item) => (
+                  {(selectedRoleId === 'admin' ? pinnedItems : rolePinnedItems).length > 0 ? (
+                    (selectedRoleId === 'admin' ? pinnedItems : rolePinnedItems).map((item) => (
                       <button
                         className="attention-row clickable-row"
                         key={`${item.sectionId}-${item.id}`}
@@ -709,7 +832,7 @@ function App() {
                   ))}
                 </div>
               </section>
-              <QuickCreate items={quickCreateItems} onCreate={handleQuickCreate} />
+              {selectedRoleId === 'admin' && <QuickCreate items={quickCreateItems} onCreate={handleQuickCreate} />}
               <ActivityLog activities={appData.activityLog} />
               <SystemStatus />
             </div>
@@ -721,16 +844,21 @@ function App() {
             templates={workflowTemplates}
           />
         ) : isWeeklyReview ? (
-          <WeeklyReview activityLog={appData.activityLog} sections={sections} />
+          <WeeklyReview activityLog={appData.activityLog} canPrint={roleConfig.permissions.canPrint} sections={sections} />
         ) : isRunSheet ? (
           <SundayRunSheet
+            canEdit={activeActionPermissions.canEdit}
+            canPrint={activeActionPermissions.canPrint}
             onAddItem={handleRunSheetAddItem}
             onDeleteItem={handleRunSheetDeleteItem}
             onUpdateItem={handleRunSheetUpdateItem}
             runSheet={appData.runSheet || []}
           />
+        ) : isTeamViewPrep ? (
+          <TeamViewPrep />
         ) : (
           <SectionPage
+            actionPermissions={activeActionPermissions}
             canEdit={canEditSection}
             dataHealth={dataHealth}
             importState={importState}
@@ -750,6 +878,7 @@ function App() {
             onTogglePin={(itemId) => handleTogglePin(activeSection, itemId)}
             onUpdateItem={(item) => handleUpdateItem(activeSection, item)}
             onUseTemplate={handleUseTemplate}
+            roleConfig={roleConfig}
             section={sectionContent}
             sectionId={activeSection}
           />

@@ -11,6 +11,7 @@ export const navigationItems = [
   { id: 'templates', label: 'Templates' },
   { id: 'weeklyReview', label: 'Weekly Review' },
   { id: 'runSheet', label: 'Sunday Run Sheet' },
+  { id: 'teamViewPrep', label: 'Team View Prep' },
   { id: 'settings', label: 'Settings' },
 ]
 
