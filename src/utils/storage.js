@@ -1,3 +1,4 @@
+import { APP_CONFIG } from '../config/appConfig'
 import { sectionPages, todaysFocusItems } from '../data/dashboardData'
 
 const STORAGE_KEY = 'faithlink-command-center-data'
@@ -13,6 +14,10 @@ function createStableId(sectionId, item, index) {
 
 function now() {
   return new Date().toLocaleString()
+}
+
+function isoDateStamp() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 function normalizeItems(data) {
@@ -45,31 +50,80 @@ function defaultFocusItems() {
   }))
 }
 
+export function getTotalItems(data) {
+  return Object.values(data?.sections || {}).reduce(
+    (total, section) => total + (section.items?.length || 0),
+    0,
+  )
+}
+
 export function getDefaultDashboardData() {
   return {
     sections: normalizeItems(cloneData(sectionPages)),
     focusItems: defaultFocusItems(),
     activityLog: [],
+    lastExportedAt: '',
     lastUpdated: now(),
   }
 }
 
-function normalizeDashboardData(data) {
-  if (data?.sections) {
+export function normalizeDashboardData(data) {
+  const sourceData = data?.dashboardData || data
+
+  if (sourceData?.sections) {
     return {
-      ...data,
-      sections: normalizeItems(data.sections),
-      focusItems: data.focusItems || defaultFocusItems(),
-      activityLog: data.activityLog || [],
-      lastUpdated: data.lastUpdated || now(),
+      ...sourceData,
+      sections: normalizeItems(sourceData.sections),
+      focusItems: sourceData.focusItems || defaultFocusItems(),
+      activityLog: sourceData.activityLog || [],
+      lastExportedAt: sourceData.lastExportedAt || '',
+      lastUpdated: sourceData.lastUpdated || now(),
     }
   }
 
+  if (sourceData && typeof sourceData === 'object') {
+    return {
+      sections: normalizeItems(sourceData),
+      focusItems: defaultFocusItems(),
+      activityLog: [],
+      lastExportedAt: '',
+      lastUpdated: now(),
+    }
+  }
+
+  return getDefaultDashboardData()
+}
+
+export function validateDashboardImport(data) {
+  const dashboardData = data?.dashboardData || data
+
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return { isValid: false, error: 'This file does not appear to be a valid FaithLink Command Center export.' }
+  }
+
+  if (!dashboardData || typeof dashboardData !== 'object' || Array.isArray(dashboardData)) {
+    return { isValid: false, error: 'This file does not appear to be a valid FaithLink Command Center export.' }
+  }
+
+  if (!dashboardData.sections || typeof dashboardData.sections !== 'object') {
+    return { isValid: false, error: 'This file does not appear to be a valid FaithLink Command Center export.' }
+  }
+
+  const normalizedData = normalizeDashboardData(data)
+
+  if (Object.keys(normalizedData.sections).length === 0) {
+    return { isValid: false, error: 'This file does not appear to be a valid FaithLink Command Center export.' }
+  }
+
   return {
-    sections: normalizeItems(data),
-    focusItems: defaultFocusItems(),
-    activityLog: [],
-    lastUpdated: now(),
+    isValid: true,
+    dashboardData: normalizedData,
+    preview: {
+      appName: data.appName || APP_CONFIG.appName,
+      exportedAt: data.exportedAt || normalizedData.lastExportedAt || 'Not provided',
+      sectionsCount: Object.keys(normalizedData.sections).length,
+      totalItems: getTotalItems(normalizedData),
+    },
   }
 }
 
@@ -111,17 +165,32 @@ export function resetDashboardData() {
 
 export function exportDashboardData(data) {
   if (typeof window === 'undefined') {
-    return
+    return null
+  }
+
+  const exportedAt = now()
+  const exportData = {
+    appName: APP_CONFIG.appName,
+    version: APP_CONFIG.version,
+    exportedAt,
+    dataMode: APP_CONFIG.dataMode,
+    totalItems: getTotalItems(data),
+    dashboardData: {
+      ...data,
+      lastExportedAt: exportedAt,
+    },
   }
 
   // Export/import is a safety feature before Firebase connection.
-  const file = new Blob([JSON.stringify(data, null, 2)], {
+  const file = new Blob([JSON.stringify(exportData, null, 2)], {
     type: 'application/json',
   })
   const url = URL.createObjectURL(file)
   const link = document.createElement('a')
   link.href = url
-  link.download = 'faithlink-command-center-data.json'
+  link.download = `faithlink-command-center-backup-${isoDateStamp()}.json`
   link.click()
   URL.revokeObjectURL(url)
+
+  return exportedAt
 }

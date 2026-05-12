@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { APP_CONFIG } from '../config/appConfig'
 import { getTemplatesForSection } from '../data/workflowTemplates'
 import ItemForm from './ItemForm'
@@ -10,13 +10,17 @@ const statusOrder = ['All', 'New', 'Open', 'In Progress', 'Urgent', 'Completed',
 
 function SectionPage({
   canEdit,
+  dataHealth,
+  importState,
   isMusic,
   isSettings,
   lastUpdated,
   onAddItem,
   onCompleteItem,
+  onConfirmImport,
   onDeleteItem,
   onExportData,
+  onImportFile,
   onResetData,
   onToggleChecklistItem,
   onTogglePin,
@@ -28,7 +32,9 @@ function SectionPage({
   const [editingItem, setEditingItem] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isTemplatePickerOpen, setIsTemplatePickerOpen] = useState(false)
+  const [isResetConfirming, setIsResetConfirming] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
+  const importInputRef = useRef(null)
   const sectionTemplates = getTemplatesForSection(sectionId)
 
   const availableFilters = useMemo(() => {
@@ -78,6 +84,16 @@ function SectionPage({
     setIsTemplatePickerOpen(false)
   }
 
+  function handleImportChange(event) {
+    const file = event.target.files?.[0]
+
+    if (file) {
+      onImportFile(file)
+    }
+
+    event.target.value = ''
+  }
+
   return (
     <section className="section-page">
       <div className="section-toolbar">
@@ -105,41 +121,94 @@ function SectionPage({
         <>
           <section className="settings-summary content-panel">
             <div>
-              <span className="eyebrow">Phase 6A</span>
+              <span className="eyebrow">Phase 6B</span>
               <h2>Local Settings</h2>
             </div>
             <div className="settings-grid">
-              <p>
-                <strong>App name:</strong> {APP_CONFIG.appName}
-              </p>
-              <p>
-                <strong>Version:</strong> {APP_CONFIG.version}
-              </p>
-              <p>
-                <strong>Data mode:</strong> Browser {APP_CONFIG.dataMode}
-              </p>
-              <p>
-                <strong>Last updated:</strong> {lastUpdated}
-              </p>
-              <p>
-                <strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}
-              </p>
-              <p>
-                <strong>Import:</strong> Import will be added in a later phase.
-              </p>
+              <p><strong>App name:</strong> {APP_CONFIG.appName}</p>
+              <p><strong>Version:</strong> {APP_CONFIG.version}</p>
+              <p><strong>Data mode:</strong> Browser {APP_CONFIG.dataMode}</p>
+              <p><strong>Last updated:</strong> {lastUpdated}</p>
+              <p><strong>Firebase:</strong> {APP_CONFIG.firebaseEnabled ? 'Enabled' : 'Not connected'}</p>
+              <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
             </div>
-            <p className="backup-reminder">
-              LocalStorage data is saved only in this browser. Export your data regularly before clearing browser data or moving to another computer.
-            </p>
             <div className="settings-actions">
               <button className="secondary-button" onClick={onExportData} type="button">
-                Export data
+                Export Backup Now
               </button>
-              <button className="danger-button reset-button" onClick={onResetData} type="button">
-                Reset sample data
-              </button>
+              {!isResetConfirming ? (
+                <button className="danger-button reset-button" onClick={() => setIsResetConfirming(true)} type="button">
+                  Reset sample data
+                </button>
+              ) : (
+                <div className="confirm-box">
+                  <p>Resetting will remove your current local data and restore sample data.</p>
+                  <button className="danger-button" onClick={onResetData} type="button">Confirm Reset</button>
+                  <button className="secondary-button" onClick={() => setIsResetConfirming(false)} type="button">Cancel</button>
+                </div>
+              )}
             </div>
           </section>
+
+          <section className="content-panel backup-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Backup</span>
+              <h2>Backup Reminder</h2>
+            </div>
+            <p className="backup-reminder">Because this app currently uses browser localStorage, export your data regularly.</p>
+            <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
+            <button className="primary-button" onClick={onExportData} type="button">Export Backup Now</button>
+          </section>
+
+          <section className="content-panel import-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Restore</span>
+              <h2>Import Data</h2>
+            </div>
+            <p className="backup-reminder">Importing will replace your current local dashboard data. Export a backup first if needed.</p>
+            <input
+              accept="application/json,.json"
+              className="hidden-file-input"
+              onChange={handleImportChange}
+              ref={importInputRef}
+              type="file"
+            />
+            <button className="secondary-button" onClick={() => importInputRef.current?.click()} type="button">
+              Import Data
+            </button>
+            {importState.error && <p className="import-error">{importState.error}</p>}
+            {importState.preview && (
+              <div className="import-preview">
+                <h3>Preview Import</h3>
+                <p><strong>App name:</strong> {importState.preview.appName}</p>
+                <p><strong>Export date:</strong> {importState.preview.exportedAt}</p>
+                <p><strong>Sections:</strong> {importState.preview.sectionsCount}</p>
+                <p><strong>Total items:</strong> {importState.preview.totalItems}</p>
+                <div className="settings-actions">
+                  <button className="danger-button" onClick={onConfirmImport} type="button">Confirm Import</button>
+                  <button className="secondary-button" onClick={() => onImportFile(null)} type="button">Cancel</button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="content-panel data-health-panel">
+            <div className="panel-heading">
+              <span className="eyebrow">Local Data</span>
+              <h2>Data Health</h2>
+            </div>
+            <div className="settings-grid">
+              <p><strong>Total sections:</strong> {dataHealth.totalSections}</p>
+              <p><strong>Total items:</strong> {dataHealth.totalItems}</p>
+              <p><strong>Pinned items:</strong> {dataHealth.pinnedItems}</p>
+              <p><strong>Today's Focus:</strong> {dataHealth.focusItems}</p>
+              <p><strong>Recent Activity:</strong> {dataHealth.activityItems}</p>
+              <p><strong>Data mode:</strong> {APP_CONFIG.dataMode}</p>
+              <p><strong>Last updated:</strong> {dataHealth.lastUpdated}</p>
+              <p><strong>Last exported:</strong> {dataHealth.lastExportedAt || 'Never'}</p>
+            </div>
+          </section>
+
           <LoginPlaceholder />
         </>
       )}
@@ -172,6 +241,7 @@ function SectionPage({
         <ItemForm
           initialItem={editingItem}
           isMusic={isMusic}
+          key={editingItem?.id || `new-${sectionId}`}
           onCancel={() => setIsFormOpen(false)}
           onSubmit={handleSubmit}
         />

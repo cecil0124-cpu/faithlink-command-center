@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const statusOptions = ['New', 'Open', 'In Progress', 'Urgent', 'Completed', 'Draft']
 
@@ -14,27 +14,27 @@ const emptyItem = {
   style: '',
 }
 
-function ItemForm({ initialItem, isMusic, onCancel, onSubmit }) {
-  const [formData, setFormData] = useState(emptyItem)
+function getInitialFormData(initialItem) {
+  return {
+    ...emptyItem,
+    ...initialItem,
+    key:
+      initialItem?.key ||
+      initialItem?.meta?.find((item) => item.label === 'Key')?.value ||
+      '',
+    tempo:
+      initialItem?.tempo ||
+      initialItem?.meta?.find((item) => item.label === 'Tempo')?.value ||
+      '',
+    style:
+      initialItem?.style ||
+      initialItem?.meta?.find((item) => item.label === 'Style')?.value ||
+      '',
+  }
+}
 
-  useEffect(() => {
-    setFormData({
-      ...emptyItem,
-      ...initialItem,
-      key:
-        initialItem?.key ||
-        initialItem?.meta?.find((item) => item.label === 'Key')?.value ||
-        '',
-      tempo:
-        initialItem?.tempo ||
-        initialItem?.meta?.find((item) => item.label === 'Tempo')?.value ||
-        '',
-      style:
-        initialItem?.style ||
-        initialItem?.meta?.find((item) => item.label === 'Style')?.value ||
-        '',
-    })
-  }, [initialItem])
+function ItemForm({ initialItem, isMusic, onCancel, onSubmit }) {
+  const [formData, setFormData] = useState(() => getInitialFormData(initialItem))
 
   function updateField(field, value) {
     setFormData((current) => ({ ...current, [field]: value }))

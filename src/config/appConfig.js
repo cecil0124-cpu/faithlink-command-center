@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
   appName: 'FaithLink Command Center',
-  version: 'Phase 5 Firebase Ready Local',
+  version: 'Phase 6B Local Backup Ready',
   dataMode: 'localStorage',
   firebaseEnabled: false,
   authEnabled: false,

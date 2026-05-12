@@ -27,8 +27,10 @@ import {
 import {
   exportDashboardData,
   getDashboardData,
+  getDashboardItemCount,
   resetDashboardData,
   updateDashboardData,
+  validateImportData,
 } from './services/dataService'
 
 const quickCreateMap = {
@@ -177,6 +179,7 @@ function App() {
   const [message, setMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [quickCreateSection, setQuickCreateSection] = useState(null)
+  const [importState, setImportState] = useState({ error: '', fileData: null, preview: null })
 
   const sections = appData.sections
   const currentSection = useMemo(
@@ -200,12 +203,28 @@ function App() {
   const needsAttentionItems = useMemo(() => getNeedsAttention(sections), [sections])
   const searchResults = useMemo(() => getSearchResults(sections, searchTerm), [sections, searchTerm])
   const recommendedTemplateItems = recommendedTemplates.map(getTemplateByName).filter(Boolean)
+  const dataHealth = useMemo(() => {
+    const allItems = Object.values(sections).flatMap((section) => section.items || [])
+    return {
+      activityItems: appData.activityLog.length,
+      focusItems: appData.focusItems.length,
+      lastExportedAt: appData.lastExportedAt || '',
+      lastUpdated: appData.lastUpdated,
+      pinnedItems: allItems.filter((item) => item.pinned).length,
+      totalItems: getDashboardItemCount(appData),
+      totalSections: Object.keys(sections).length,
+    }
+  }, [appData, sections])
 
   function persistData(nextData, nextMessage, activity) {
     const timestamp = getTimestamp()
     const baseActivities = nextData.activityLog || appData.activityLog || []
-    const nextActivities = activity
-      ? [createActivity(activity.action, activity.section, activity.itemTitle, timestamp), ...baseActivities].slice(0, 30)
+    const activityItems = Array.isArray(activity) ? activity : activity ? [activity] : []
+    const nextActivities = activityItems.length > 0
+      ? [
+          ...activityItems.map((entry) => createActivity(entry.action, entry.section, entry.itemTitle, timestamp)),
+          ...baseActivities,
+        ].slice(0, 30)
       : baseActivities
     const dataWithTimestamp = {
       ...nextData,
@@ -377,12 +396,53 @@ function App() {
   }
 
   function handleExportData() {
-    exportDashboardData(appData)
-    persistData(appData, 'Data exported', {
-      action: 'Data exported',
+    const exportedAt = exportDashboardData(appData)
+    persistData(
+      { ...appData, lastExportedAt: exportedAt || appData.lastExportedAt },
+      'Backup created',
+      [
+        { action: 'Data exported', section: 'Settings', itemTitle: 'JSON backup' },
+        { action: 'Backup created', section: 'Settings', itemTitle: 'JSON backup' },
+      ],
+    )
+  }
+
+  async function handleImportFile(file) {
+    if (!file) {
+      setImportState({ error: '', fileData: null, preview: null })
+      return
+    }
+
+    try {
+      const parsedData = JSON.parse(await file.text())
+      const validation = validateImportData(parsedData)
+
+      if (!validation.isValid) {
+        setImportState({ error: validation.error, fileData: null, preview: null })
+        return
+      }
+
+      setImportState({ error: '', fileData: validation.dashboardData, preview: validation.preview })
+    } catch {
+      setImportState({
+        error: 'This file does not appear to be a valid FaithLink Command Center export.',
+        fileData: null,
+        preview: null,
+      })
+    }
+  }
+
+  function handleConfirmImport() {
+    if (!importState.fileData) {
+      return
+    }
+
+    persistData(importState.fileData, 'Data imported', {
+      action: 'Data imported',
       section: 'Settings',
       itemTitle: 'JSON backup',
     })
+    setImportState({ error: '', fileData: null, preview: null })
   }
 
   return (
@@ -528,13 +588,17 @@ function App() {
         ) : (
           <SectionPage
             canEdit={canEditSection}
+            dataHealth={dataHealth}
+            importState={importState}
             isMusic={activeSection === 'music'}
             isSettings={activeSection === 'settings'}
             lastUpdated={appData.lastUpdated}
             onAddItem={(item) => handleAddItem(activeSection, item)}
             onCompleteItem={(itemId) => handleCompleteItem(activeSection, itemId)}
+            onConfirmImport={handleConfirmImport}
             onDeleteItem={(itemId) => handleDeleteItem(activeSection, itemId)}
             onExportData={handleExportData}
+            onImportFile={handleImportFile}
             onResetData={handleResetData}
             onToggleChecklistItem={(itemId, checklistIndex) => handleToggleChecklistItem(activeSection, itemId, checklistIndex)}
             onTogglePin={(itemId) => handleTogglePin(activeSection, itemId)}
@@ -549,6 +613,7 @@ function App() {
           <ItemForm
             initialItem={{ category: sectionPages[quickCreateSection].title }}
             isMusic={quickCreateSection === 'music'}
+            key={`quick-create-${quickCreateSection}`}
             onCancel={() => setQuickCreateSection(null)}
             onSubmit={handleQuickCreateSubmit}
           />

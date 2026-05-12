@@ -1080,3 +1080,46 @@ textarea {
     width: 100%;
   }
 }
+
+.hidden-file-input {
+  display: none;
+}
+
+.import-panel,
+.backup-panel,
+.data-health-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.import-preview,
+.confirm-box {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(128, 0, 32, 0.16);
+  border-radius: 14px;
+  background: #fffaf0;
+  padding: 14px;
+}
+
+.import-preview h3 {
+  margin: 0;
+  color: var(--color-black);
+}
+
+.import-preview p,
+.import-error,
+.confirm-box p,
+.backup-panel p {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.import-error {
+  color: var(--color-burgundy);
+}
+
+.confirm-box .settings-actions,
+.import-preview .settings-actions {
+  margin-top: 2px;
+}

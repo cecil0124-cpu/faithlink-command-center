@@ -2,40 +2,45 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
-## Phase 6A Features
+## Phase 6B Features
 
-- Workflow templates for Sunday service prep, media production, audio/video tech, prayer and visitor follow-up, website/app work, music projects, and AI prompts.
-- New Templates sidebar page with all templates grouped by category.
-- Create From Template buttons on matching section pages.
-- Recommended Templates panel on My World Overview.
-- Template activity logging when a workflow is created.
-- Checklist support for generated workflow tasks such as Sunday service prep, X32 startup, and vMix startup.
+- Safer local data management while the app still uses browser localStorage.
+- Backup export with metadata: app name, version, export date, data mode, total item count, and dashboard data.
+- Import Data flow with JSON file selection, validation, preview, warning, cancel, and confirm import.
+- Backup Reminder panel showing last exported date and an Export Backup Now button.
+- Data Health panel showing sections, total items, pinned items, Today's Focus count, recent activity count, data mode, last updated, and last exported.
+- Reset Sample Data now requires confirmation.
+- Activity log records Data exported, Backup created, Data imported, and Sample data reset.
 
-## How Templates Work
+## How To Export Data
 
-Templates live in `src/data/workflowTemplates.js`. Each template has a name, destination section, description, and one or more tasks. When you create from a template, the app generates local dashboard items with status `Open`, timestamps, category, notes, next step, and optional checklist items.
+Open Settings and click `Export Backup Now`. The app downloads a JSON backup named like:
 
-Templates are local only until Firebase is connected.
+```text
+faithlink-command-center-backup-YYYY-MM-DD.json
+```
 
-## How Checklist Items Work
+Export regularly before clearing browser data, switching computers, or testing major local changes.
 
-Some generated tasks include a `checklist` array. Checklist items can be checked or unchecked directly from the task card. Changes save to browser localStorage and update the task's last updated time.
+## How To Import Data
 
-## Current App Features
+Open Settings and click `Import Data`. Choose a JSON file previously exported from FaithLink Command Center. The app previews the app name, export date, section count, and item count before import.
 
-- Command Center Home with Today's Focus, Needs Attention, Pinned Items, Recommended Templates, This Week, Quick Create, Recent Activity, and System Status panels.
-- Local section workspaces for Sunday Service, Media Tasks, Prayer Requests, Visitors / Connect Cards, Music Projects, Website & App Projects, AI Prompt Library, Tech SOPs, Templates, and Settings.
-- Browser localStorage persistence for items, checklists, pinned state, today's focus, activity log, and last updated time.
-- Add, edit, delete, complete, pin, and unpin local items.
-- Global search, section filters, dynamic overview cards, empty states, and manual JSON export.
+Importing replaces the current local dashboard data. Export a fresh backup first if you need to preserve your current browser data.
+
+## Why Backups Matter
+
+This phase still uses browser localStorage. localStorage is browser-specific and device-specific. Clearing site data, changing browsers, or using another computer can make local data unavailable. Manual backup/import is the safety bridge until Firebase sync is connected.
+
+Future Firebase sync will replace manual backup/import for everyday use, but exports may remain useful for extra safety.
+
+## Workflow Templates
+
+Templates live in `src/data/workflowTemplates.js`. Each template has a destination section and one or more generated tasks. Some generated tasks include checklist items that can be checked or unchecked and saved locally.
 
 ## Firebase Status
 
 Firebase is not connected yet. Firebase is not installed yet. The app remains localStorage-based through `src/services/dataService.js`.
-
-## localStorage Warning
-
-Your data is browser-specific. Export your data regularly before clearing browser data or moving to another computer.
 
 ## Run Locally
 
@@ -55,12 +60,6 @@ npm run build
 - Firebase is not connected.
 - Authentication is not connected.
 - Firestore is not connected.
-- Import is still a placeholder.
-- Templates and checklist items are local only.
-- Manual JSON export is the current backup option.
-
-## Future Phase 6B / Phase 7
-
-- Import/restore from exported JSON backups.
-- More workflow automation around recurring services.
-- Firebase Auth, Firestore sync, and security rules when ready.
+- Backups are manual.
+- Imported data replaces current local data after confirmation.
+- Data is stored only in the current browser's localStorage.
