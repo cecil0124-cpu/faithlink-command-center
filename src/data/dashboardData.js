@@ -32,9 +32,9 @@ export const dashboardMeta = {
 }
 
 export const focusCard = {
-  title: 'Sunday readiness and follow-up',
-  detail: 'Prepare the service checklist, confirm media work, and make sure care items do not get buried.',
-  nextStep: 'Next: finish the worship service checklist and assign media owners.',
+  title: 'Weekly command flow',
+  detail: 'Line up ministry, media, music, technology, care, and AI work without losing the big picture.',
+  nextStep: 'Next: review priority items, upcoming due dates, and the active workspace.',
 }
 
 export const overviewCards = [
@@ -78,11 +78,11 @@ export const quickCreateItems = [
 ]
 
 export const upcomingItems = [
-  { when: 'Sunday', title: 'Sunday worship service' },
-  { when: 'Wednesday', title: 'Wednesday Bible study' },
-  { when: 'This week', title: 'Sermon editing' },
-  { when: 'Next post', title: 'Social media post' },
-  { when: 'Review', title: 'Website update check' },
+  { when: 'This week', title: 'Review ministry priorities' },
+  { when: 'Media', title: 'Check production tasks' },
+  { when: 'Music', title: 'Capture song and release notes' },
+  { when: 'Tech', title: 'Review app/SOP updates' },
+  { when: 'Backup', title: 'Export local dashboard backup' },
 ]
 
 const sectionData = {

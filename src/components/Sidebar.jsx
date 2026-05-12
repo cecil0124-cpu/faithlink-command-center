@@ -8,6 +8,7 @@ function Sidebar({ activeSection, items, onSelect }) {
         <div>
           <p className="brand-name">FaithLink</p>
           <p className="brand-subtitle">Command Center</p>
+          <p className="brand-mode">Personal Command Center</p>
         </div>
       </div>
 

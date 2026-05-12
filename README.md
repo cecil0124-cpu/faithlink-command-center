@@ -2,6 +2,29 @@
 
 FaithLink Command Center is a private, free-first React/Vite dashboard for organizing ministry, media, music, technology, AI prompts, SOPs, and project work in one clean command center.
 
+## Phase 11 FaithLink Visual Rebrand
+
+- Rebrands the app as a broader personal command center for ministry, media, music, technology, AI workflows, and real-life planning.
+- Adds a central theme config in `src/config/themeConfig.js`.
+- Uses a navy, blue, white, gold, and neutral command-center color system.
+- Keeps Restoration Ministries as a preset/workspace inside FaithLink, not the whole app identity.
+- Scopes Restoration burgundy/gray accents to Restoration-specific cards and preset labels.
+
+### Color System
+
+- Primary: `#101828`
+- Secondary: `#2563eb`
+- Accent: `#d4af37`
+- Background: `#f5f7fb`
+- Card: `#ffffff`
+- Text: `#111827`
+- Muted: `#667085`
+- Border: `#e5e7eb`
+- Success: `#16a34a`
+- Warning: `#f59e0b`
+- Danger: `#dc2626`
+- Info: `#0ea5e9`
+
 ## Phase 10 Deployment Prep
 
 - Adds `.env.example` with placeholder Firebase variable names.

@@ -219,7 +219,7 @@ function SectionPage({
             </div>
           </section>
 
-          <section className="content-panel backup-panel">
+          <section className="content-panel backup-panel restoration-preset-panel">
             <div className="panel-heading">
               <span className="eyebrow">Restoration Ministries</span>
               <h2>Restoration Setup Preset</h2>

@@ -17,6 +17,7 @@ import TemplatesPage from './components/TemplatesPage'
 import TodayFocus from './components/TodayFocus'
 import WeeklyReview from './components/WeeklyReview'
 import { canAccessSection, defaultRoleId, getRoleConfig } from './config/rolesConfig'
+import { APP_CONFIG } from './config/appConfig'
 import {
   editableSectionIds,
   focusCard,
@@ -688,7 +689,7 @@ function App() {
             isSearchActive
               ? `Searching local dashboard data for "${searchTerm}".`
               : isOverview
-                ? 'A daily command center for ministry, media, music, technology, care, and AI workflows.'
+                ? 'A personal command center for ministry, media, music, technology, AI workflows, and real-life planning.'
                 : sectionContent?.description || 'Review and print weekly service workflow tools.'
           }
           focusCard={focusCard}
@@ -764,9 +765,21 @@ function App() {
             )}
 
             <div className="home-panel-grid">
+              <section className="content-panel command-status-panel">
+                <div className="panel-heading">
+                  <span className="eyebrow">Command Status</span>
+                  <h2>Workspace</h2>
+                </div>
+                <div className="metadata-grid">
+                  <p><strong>Active Workspace:</strong> Restoration Ministries</p>
+                  <p><strong>Data Mode:</strong> Local Browser Storage</p>
+                  <p><strong>Role:</strong> {roleConfig.label}</p>
+                  <p><strong>Deployment:</strong> {APP_CONFIG.hostingStatus} / Firebase Prep</p>
+                </div>
+              </section>
               <section className="content-panel identity-card">
                 <div className="panel-heading">
-                  <span className="eyebrow">Church Home</span>
+                  <span className="eyebrow restoration-eyebrow">Active Workspace / Preset</span>
                   <h2>Restoration Ministries</h2>
                 </div>
                 <p>1204 Commercial Ave, Charlotte, NC 28208</p>
